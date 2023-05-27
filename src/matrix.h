@@ -9,7 +9,7 @@
 #include <random>
 #include <cstring>
 #include <assert.h>
-#include <Eigen/Dense>
+#include "Eigen/Dense"
 
 template <typename T>
 class Matrix
@@ -105,6 +105,58 @@ Matrix<T> mul(const Matrix<T> &A, const Matrix<T> &B){
     for(int i=0;i<A.n;i++)
         for(int j=0;j<B.d;j++)
             result.data[i*B.d+j] = _C(i,j);
+    
+    return result;
+}
+
+template<typename T>
+Matrix<float> to_paa(const Matrix<T> &A, unsigned seg_num){
+
+    Matrix<float> result(A.n, seg_num);
+
+    unsigned len_per_seg = A.d / seg_num;
+
+    int s, i;
+    float* ele;
+    float* vec;
+    for(int i =0 ;i < A.n; i++){  
+        vec = A.data + i * A.d;   
+        for (s=0; s<seg_num; s++) {
+            ele = result.data + i * seg_num + s;
+            *ele = 0;
+            for (int j=0; j < len_per_seg; j++) {
+                *ele += vec[(s * len_per_seg)+j];
+            }
+            *ele /= len_per_seg;
+        }
+
+    }
+    
+    return result;
+}
+
+template<typename T>
+Matrix<float> to_paa_positions(const Matrix<T> &A, unsigned seg_num, unsigned* order){
+
+    Matrix<float> result(A.n, seg_num);
+
+    unsigned len_per_seg = A.d / seg_num;
+
+    int s, i;
+    float* ele;
+    float* vec;
+    for(int i =0 ;i < A.n; i++){  
+        vec = A.data + i * A.d;   
+        for (s=0; s<seg_num; s++) {
+            ele = result.data + i * seg_num + s;
+            *ele = 0;
+            for (int j=0; j < len_per_seg; j++) {
+                *ele += vec[order[(s * len_per_seg)+j]];
+            }
+            *ele /= len_per_seg;
+        }
+
+    }
     
     return result;
 }

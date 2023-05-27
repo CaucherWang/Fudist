@@ -70,10 +70,15 @@ int main(int argc, char * argv[]) {
     L2Space l2space(D);
     HierarchicalNSW<float>* appr_alg = new HierarchicalNSW<float> (&l2space, N, M, efConstruction);
 
+    int curr = 0;
+#pragma omp parallel for
     for(int i=0;i<N;i++){
         appr_alg->addPoint(X->data + i * D, i);
-        if(i % report == 0){
-            cerr << "Processing - " << i << " / " << N << endl;
+        #pragma omp critical
+        {
+            if(++curr % report == 0){
+                cerr << "Processing - " << curr << " / " << N << endl;
+            }
         }
     }
 

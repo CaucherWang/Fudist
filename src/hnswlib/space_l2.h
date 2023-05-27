@@ -214,7 +214,7 @@ namespace hnswlib {
         L2Space(size_t dim) {
             fstdistfunc_ = L2Sqr;
             // We block SIMD optimization.
-            /*
+            
     #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
             std::cout << "Using SSE!" << std::endl;
         #if defined(USE_AVX512)
@@ -237,7 +237,8 @@ namespace hnswlib {
                 fstdistfunc_ = L2SqrSIMD4ExtResiduals;
             std::cout << fstdistfunc_ << std::endl;
     #endif
-            */
+            
+            
             dim_ = dim;
             data_size_ = dim * sizeof(float);
         }

@@ -1,0 +1,6 @@
+.vscode/
+data/
+results/
+src/Eigen/
+src/index_hnsw
+src/search_hnsw

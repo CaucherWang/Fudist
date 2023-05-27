@@ -1,4 +1,4 @@
-
+#pragma once
 
 /*
 The file is the core of the ADSampling algorithm. 

@@ -2,8 +2,8 @@ import os
 import numpy as np
 import struct
 
-source = './'
-datasets = ['gist']
+source = './data/'
+datasets = ['tiny5m']
 
 def read_fvecs(filename, c_contiguous=True):
     fv = np.fromfile(filename, dtype=np.float32)

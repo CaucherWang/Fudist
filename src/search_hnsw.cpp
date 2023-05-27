@@ -10,10 +10,11 @@
 
 #include <ctime>
 #include <cmath>
-#include <matrix.h>
-#include <utils.h>
-#include <hnswlib/hnswlib.h>
-#include <adsampling.h>
+#include "matrix.h"
+#include "utils.h"
+#include "hnswlib/hnswlib.h"
+#include "adsampling.h"
+#include "paa.h"
 
 #include <getopt.h>
 
@@ -62,34 +63,40 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 
     adsampling::clear();
 
-    for (int i = 0; i < qsize; i++) {
+    for(int _ = 0; _ < 3; ++_){
+        for (int i = 0; i < qsize; i++) {
+            paa::cur_query_label = i;
 #ifndef WIN32
-        float sys_t, usr_t, usr_t_sum = 0;  
-        struct rusage run_start, run_end;
-        GetCurTime( &run_start);
+            float sys_t, usr_t, usr_t_sum = 0;  
+            struct rusage run_start, run_end;
+            GetCurTime( &run_start);
 #endif
-        std::priority_queue<std::pair<float, labeltype >> result = appr_alg.searchKnn(massQ + vecdim * i, k, adaptive);  
+            std::priority_queue<std::pair<float, labeltype >> result = appr_alg.searchKnn(massQ + vecdim * i, k, adaptive);  
 #ifndef WIN32
-        GetCurTime( &run_end);
-        GetTime( &run_start, &run_end, &usr_t, &sys_t);
-        total_time += usr_t * 1e6;
+            GetCurTime( &run_end);
+            GetTime( &run_start, &run_end, &usr_t, &sys_t);
+            total_time += usr_t * 1e6;
 #endif
-        std::priority_queue<std::pair<float, labeltype >> gt(answers[i]);
-        total += gt.size();
-        int tmp = recall(result, gt);
-        correct += tmp;   
+            if(_ == 0){
+                std::priority_queue<std::pair<float, labeltype >> gt(answers[i]);
+                total += gt.size();
+                int tmp = recall(result, gt);
+                correct += tmp;   
+            }
+        }
     }
-    long double time_us_per_query = total_time / qsize + rotation_time;
+
+    long double time_us_per_query = total_time / qsize / 3.0 + rotation_time;
     long double recall = 1.0f * correct / total;
     
-    cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " " << adsampling::tot_dimension + adsampling::tot_full_dist * vecdim << endl;
+    // cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " " << adsampling::tot_dimension + adsampling::tot_full_dist * vecdim << endl;
+    cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " " << (long double)adsampling::tot_full_dist / (long double)adsampling::tot_dist_calculation << endl;
     return ;
 }
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    vector<size_t> efs;
-    efs.push_back(1500);
+    vector<size_t> efs{500, 800, 1500};
     for (size_t ef : efs) {
         appr_alg.setEf(ef);
         test_approx(massQ, vecsize, qsize, appr_alg, vecdim, answers, k, adaptive);
@@ -118,18 +125,41 @@ int main(int argc, char * argv[]) {
     };
 
     int ind;
-    int iarg = 0;
+    int iarg = -1;
     opterr = 1;    //getopt error message (off: 0)
 
-    char index_path[256] = "";
-    char query_path[256] = "";
-    char groundtruth_path[256] = "";
-    char result_path[256] = "";
-    char dataset[256] = "";
-    char transformation_path[256] = "";
+    // 0: original HNSW, 1: HNSW++ 2: HNSW+ 3: PAA 
+    int randomize = 3;
+    string exp_name = "PAA96";
+    int subk=20;
+    int paa_segment = 96;
 
-    int randomize = 0;
-    int subk=100;
+    string base_path_str = "../data";
+    string result_base_path_str = "../results";
+    string data_str = "gist";
+    string ef_str = "500";
+    string M_str ="16";
+    string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
+    string result_path_str = result_base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log";
+    string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs";
+    string trans_path_str = base_path_str + "/" + data_str + "/O.fvecs";
+    string paa_path_str = base_path_str + "/" + data_str + "/PAA_" + to_string(paa_segment) + "_" + data_str + "_base.fvecs";
+    char index_path[256];
+    strcpy(index_path, index_path_str.c_str());
+    char query_path[256] = "";
+    strcpy(query_path, query_path_str.c_str());
+    char groundtruth_path[256] = "";
+    strcpy(groundtruth_path, groundtruth_path_str.c_str());
+    char result_path[256];
+    strcpy(result_path, result_path_str.c_str());
+    char dataset[256] = "";
+    strcpy(dataset, data_str.c_str());
+    char transformation_path[256] = "";
+    strcpy(transformation_path, trans_path_str.c_str());
+    char paa_path[256] = "";
+    strcpy(paa_path, paa_path_str.c_str());
+
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:i:q:g:r:t:n:k:e:p:", longopts, &ind);
@@ -168,17 +198,26 @@ int main(int argc, char * argv[]) {
     }
 
     
-    
     Matrix<float> Q(query_path);
     Matrix<unsigned> G(groundtruth_path);
-    Matrix<float> P(transformation_path);
+
+    cout << "result path: "<< result_path << endl;
 
     freopen(result_path,"a",stdout);
-    if(randomize){
+    if(randomize == 1 || randomize == 2){
+        Matrix<float> P(transformation_path);
         StopW stopw = StopW();
         Q = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         adsampling::D = Q.d;
+    }else if(randomize == 3){
+        paa::paa_table = Matrix<float>(paa_path);
+        StopW stopw = StopW();
+        paa::queries_paa = to_paa(Q, paa_segment);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        paa::D = Q.d;
+        paa::segment_num = paa_segment;
+        paa::len_per_seg = paa::D / paa::segment_num;
     }
     
     L2Space l2space(Q.d);
