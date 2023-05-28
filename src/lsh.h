@@ -7,63 +7,91 @@
 #include <vector>
 #include <iostream>
 #include "matrix.h"
-
+#include "utils.h"
+#include <boost/math/distributions/chi_squared.hpp>
 using namespace std;
 
-namespace paa{
+namespace lsh{
     unsigned int D = 960;
 
-    unsigned int S;
-    unsigned int W;
-    unsigned int lowdim;
+    unsigned int lowdim; // number of hash functions 
+
+    double coeffq;
+    double probQ;  // p-tau
+
+    Matrix<float> lsh_table, queries_lsh;
 
     unsigned int cur_query_label;
 
-    struct HashParam
-    {
-        // the value of a in S hash functions
-        float** rndAs = nullptr;
-        // the value of b in S hash functions
-        float* rndBs = nullptr;
-        // 
-        //float W = 0.0f;
+    void initialize(){
+        // ipdistfunc_ = s->get_dist_func();
+        // setHash();
 
-        //float calHash(float* point, )
-    };
+		boost::math::chi_squared chi(lowdim);
+		coeffq = 1.0 / boost::math::quantile(chi, probQ);
+	}
 
-    HashParam hashpar;
 
     float dist_comp(const float& bsf, unsigned label){
 
-        // float * q = &queries_paa.data[cur_query_label * segment_num];
-        // float* paa_v = &paa_table.data[label * segment_num];
-        // float dis = 0;
+        float * q = &queries_lsh.data[cur_query_label * lowdim];
+        float* lsh_v = &lsh_table.data[label * lowdim];
+        float dis = 0;
 
-        // for(int i = 0; i < segment_num; ++i){
-        //     dis += (q[i] - paa_v[i]) * (q[i] - paa_v[i]);
-        // }
+        for(int i = 0; i < lowdim; ++i){
+            dis += (q[i] - lsh_v[i]) * (q[i] - lsh_v[i]);
+        }
 
-        // dis *= (D / segment_num);
+        dis *= coeffq;
 
-        // return dis >= bsf ? -dis : dis;
+        return dis >= bsf ? -dis : dis;
     }
 
-    // inline float cal_inner_product(float* v1, float* v2, int dim)
+    // struct HashParam
     // {
-    // #if (defined __AVX2__ && defined __USE__AVX2__ZX__)
-    //     return faiss::fvec_inner_product_avx512(v1, v2, dim);
-    // #else
-    //     return calIp_fast(v1, v2, dim);
-    // #endif
-    // }
+    //     // the value of a in S hash functions
+    //     float** rndAs = nullptr;
+    //     // the value of b in S hash functions
+    //     // float* rndBs = nullptr;
+    //     // 
+    //     //float W = 0.0f;
+
+    //     //float calHash(float* point, )
+    // };
+
+    // HashParam hashPar;
+    // hnswlib::DISTFUNC<float> ipdistfunc_;
+
 
     // float* calHash(float* point)
     // {
-    //     float* res = new float[S];
-    //     for (int i = 0; i < S; i++) {
-    //         res[i] = (cal_inner_product(point, hashPar.rndAs[i], lowdim) + hashPar.rndBs[i]) / W;
+    //     float* res = new float[lowdim];
+    //     for (int i = 0; i < lowdim; i++) {
+    //         res[i] = (ipdistfunc_(point, hashPar.rndAs[i], &D));
     //     }
     //     return res;
+    // }
+
+        // void setHash()
+    // {
+    //     hashPar.rndAs = new float* [lowdim];
+    //     // hashPar.rndBs = new float[S];
+
+    //     for (int i = 0; i < lowdim; i++) {
+    //         hashPar.rndAs[i] = new float[D];
+    //     }
+
+    //     //std::mt19937 rng(int(std::time(0)));
+    //     std::mt19937 rng(int(0));
+    //     // std::uniform_real_distribution<float> ur(0, W);
+    //     std::normal_distribution<float> nd;//nd is a norm random variable generator: mu=0, sigma=1
+    //     for (int j = 0; j < lowdim; j++){
+    //         for (int i = 0; i < D; i++){
+    //             hashPar.rndAs[j][i] = (nd(rng));
+    //         }
+    //         // hashPar.rndBs[j] = (ur(rng));
+    //     }
+
     // }
 
 

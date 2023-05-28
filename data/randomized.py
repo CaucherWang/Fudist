@@ -3,7 +3,7 @@ import numpy as np
 import struct
 
 source = './data/'
-datasets = ['tiny5m']
+datasets = ['imagenet', 'ukbench', 'word2vec']
 
 def read_fvecs(filename, c_contiguous=True):
     fv = np.fromfile(filename, dtype=np.float32)

@@ -15,6 +15,7 @@
 #include "hnswlib/hnswlib.h"
 #include "adsampling.h"
 #include "paa.h"
+#include "lsh.h"
 
 #include <getopt.h>
 
@@ -66,6 +67,8 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
     for(int _ = 0; _ < 3; ++_){
         for (int i = 0; i < qsize; i++) {
             paa::cur_query_label = i;
+            lsh::cur_query_label = i;
+            adsampling::cur_query_label = i;
 #ifndef WIN32
             float sys_t, usr_t, usr_t_sum = 0;  
             struct rusage run_start, run_end;
@@ -128,11 +131,17 @@ int main(int argc, char * argv[]) {
     int iarg = -1;
     opterr = 1;    //getopt error message (off: 0)
 
-    // 0: original HNSW, 1: HNSW++ 2: HNSW+ 3: PAA 
-    int randomize = 3;
-    string exp_name = "PAA96";
+    // 0: original HNSW, 1: HNSW++ 2: HNSW+ 3: PAA 4: LSH
+    //                             20:HNSW+-keep
+    int randomize = 20;
+    // string exp_name = "LSH16-.95";
+    string exp_name = "ADSKeep2.1-32";
     int subk=20;
+    float ads_epsilon0 = 2.1;
+    float ads_delta_d = 32;
     int paa_segment = 96;
+    int lsh_dim = 16;
+    double lsh_p_tau = 0.95;
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
@@ -144,6 +153,9 @@ int main(int argc, char * argv[]) {
     string result_path_str = result_base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log";
     string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs";
     string trans_path_str = base_path_str + "/" + data_str + "/O.fvecs";
+    string transed_data_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_base.fvecs";
+    string lsh_trans_path_str = base_path_str + "/" + data_str + "/LSH" + to_string(lsh_dim) + ".fvecs";
+    string lsh_path_str = base_path_str + "/" + data_str + "/LSH" + to_string(lsh_dim) + "_" + data_str + "_base.fvecs";
     string paa_path_str = base_path_str + "/" + data_str + "/PAA_" + to_string(paa_segment) + "_" + data_str + "_base.fvecs";
     char index_path[256];
     strcpy(index_path, index_path_str.c_str());
@@ -157,8 +169,14 @@ int main(int argc, char * argv[]) {
     strcpy(dataset, data_str.c_str());
     char transformation_path[256] = "";
     strcpy(transformation_path, trans_path_str.c_str());
+    char transed_data_path[256] = "";
+    strcpy(transed_data_path, transed_data_path_str.c_str());
     char paa_path[256] = "";
     strcpy(paa_path, paa_path_str.c_str());
+    char lsh_trans_path[256] = "";
+    strcpy(lsh_trans_path, lsh_trans_path_str.c_str());
+    char lsh_path[256] = "";
+    strcpy(lsh_path, lsh_path_str.c_str());
 
 
     while(iarg != -1){
@@ -201,6 +219,8 @@ int main(int argc, char * argv[]) {
     Matrix<float> Q(query_path);
     Matrix<unsigned> G(groundtruth_path);
 
+    // InnerProductSpace ip_space(Q.d);
+
     cout << "result path: "<< result_path << endl;
 
     freopen(result_path,"a",stdout);
@@ -208,6 +228,13 @@ int main(int argc, char * argv[]) {
         Matrix<float> P(transformation_path);
         StopW stopw = StopW();
         Q = mul(Q, P);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        adsampling::D = Q.d;
+    }else if(randomize == 20){
+        Matrix<float> P(transformation_path);
+        adsampling::project_table = Matrix<float>(transed_data_path);
+        StopW stopw = StopW();
+        adsampling::queries_project = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         adsampling::D = Q.d;
     }else if(randomize == 3){
@@ -218,6 +245,16 @@ int main(int argc, char * argv[]) {
         paa::D = Q.d;
         paa::segment_num = paa_segment;
         paa::len_per_seg = paa::D / paa::segment_num;
+    }else if(randomize == 4){
+        Matrix<float> P(lsh_trans_path);
+        lsh::lsh_table = Matrix<float>(lsh_path);
+        StopW stopw = StopW();
+        lsh::queries_lsh = mul(Q, P);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        lsh::D = Q.d;
+        lsh::probQ = lsh_p_tau;
+        lsh::lowdim = P.d;
+        lsh::initialize();
     }
     
     L2Space l2space(Q.d);

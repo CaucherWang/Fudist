@@ -16,6 +16,10 @@ using namespace std;
 
 namespace adsampling{
 
+        Matrix<float> project_table, queries_project;
+        unsigned int cur_query_label;       
+
+
 unsigned int D = 960; // The dimensionality of the dataset. 
 float epsilon0 = 2.1;  // epsilon0 - by default 2.1, recommended in [1.0,4.0], valid in in [0, +\infty) 
 unsigned int delta_d = 32; // dimension sampling for every delta_d dimensions.
@@ -82,6 +86,42 @@ float dist_comp(const float& dis, const void *data, const void *query,
     // We return the exact distance when we have sampled all the dimensions.
     return res;
 }
+
+float dist_comp_keep(const float& bsf, unsigned label){
+    // If the algorithm starts a non-zero dimensionality (i.e., the case of IVF++), we conduct the hypothesis testing immediately. 
+    float * q = &queries_project.data[cur_query_label * D];
+    float* d = &project_table.data[label * D];
+    float dis = 0;
+    int i = 0;
+    float res = 0;
+
+    while(i < D){
+        // It continues to sample additional delta_d dimensions. 
+        int check = std::min(delta_d, D-i);
+        i += check;
+        for(int j = 1;j<=check;j++){
+            float t = *d - *q;
+            d ++;
+            q ++;
+            res += t * t;  
+        }
+        // Hypothesis tesing
+        if(res >= bsf * ratio(D, i)){
+#ifdef COUNT_DIMENSION            
+            tot_dimension += i;
+#endif                
+            // If the null hypothesis is reject, we return the approximate distance.
+            // We return -dis' to indicate that it's a negative object.
+            return -res * D / i;
+        }
+    }
+#ifdef COUNT_DIMENSION            
+        tot_dimension += D;
+#endif    
+    // We return the exact distance when we have sampled all the dimensions.
+    return res;
+}
+
 
 };
 

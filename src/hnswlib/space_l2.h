@@ -215,28 +215,28 @@ namespace hnswlib {
             fstdistfunc_ = L2Sqr;
             // We block SIMD optimization.
             
-    #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
-            std::cout << "Using SSE!" << std::endl;
-        #if defined(USE_AVX512)
-            if (AVX512Capable())
-                L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX512;
-            else if (AVXCapable())
-                L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
-        #elif defined(USE_AVX)
-            if (AVXCapable())
-                L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
-        #endif
+    // #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
+    //         std::cout << "Using SSE!" << std::endl;
+    //     #if defined(USE_AVX512)
+    //         if (AVX512Capable())
+    //             L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX512;
+    //         else if (AVXCapable())
+    //             L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
+    //     #elif defined(USE_AVX)
+    //         if (AVXCapable())
+    //             L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
+    //     #endif
 
-            if (dim % 16 == 0)
-                fstdistfunc_ = L2SqrSIMD16Ext;
-            else if (dim % 4 == 0)
-                fstdistfunc_ = L2SqrSIMD4Ext;
-            else if (dim > 16)
-                fstdistfunc_ = L2SqrSIMD16ExtResiduals;
-            else if (dim > 4)
-                fstdistfunc_ = L2SqrSIMD4ExtResiduals;
-            std::cout << fstdistfunc_ << std::endl;
-    #endif
+    //         if (dim % 16 == 0)
+    //             fstdistfunc_ = L2SqrSIMD16Ext;
+    //         else if (dim % 4 == 0)
+    //             fstdistfunc_ = L2SqrSIMD4Ext;
+    //         else if (dim > 16)
+    //             fstdistfunc_ = L2SqrSIMD16ExtResiduals;
+    //         else if (dim > 4)
+    //             fstdistfunc_ = L2SqrSIMD4ExtResiduals;
+    //         std::cout << fstdistfunc_ << std::endl;
+    // #endif
             
             
             dim_ = dim;
