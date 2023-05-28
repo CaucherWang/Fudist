@@ -28,12 +28,14 @@ long double distance_time = 0;
 unsigned long long tot_dimension = 0;
 unsigned long long tot_dist_calculation = 0;
 unsigned long long tot_full_dist = 0;
+// unsigned long long tot_comp_dim =0;
 
 void clear(){
     distance_time = 0;
     tot_dimension = 0;
     tot_dist_calculation = 0;
     tot_full_dist = 0;
+    // tot_comp_dim = 0;
 }
 
 // The hypothesis testing checks whether \sqrt{D/d} dis' > (1 +  epsilon0 / \sqrt{d}) * r.
@@ -106,7 +108,7 @@ float dist_comp_keep(const float& bsf, unsigned label){
             res += t * t;  
         }
         // Hypothesis tesing
-        if(res >= bsf * ratio(D, i)){
+        if(i < D && res >= bsf * ratio(D, i)){
 #ifdef COUNT_DIMENSION            
             tot_dimension += i;
 #endif                

@@ -53,7 +53,7 @@ Matrix<T>::Matrix(char *data_file_path){
     n = 0;
     d = 0;
     data = NULL;
-    cerr << data_file_path << std::endl;
+    std::cerr << data_file_path << std::endl;
     std::ifstream in(data_file_path, std::ios::binary);
     if (!in.is_open()) {
         std::cout << "open file error" << std::endl;
