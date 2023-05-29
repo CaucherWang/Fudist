@@ -20,9 +20,11 @@ public:
     T* data;
     size_t n;
     size_t d;
+    size_t M, Ks, sub_vec_len;
 
     Matrix(); // Default
     Matrix(char * data_file_path); // IO
+    Matrix(char * data_file_path, bool from_fdat); // IO from fdat (pq codebook)
     Matrix(size_t n, size_t d); // Matrix of size n * d
 
     // Deconstruction
@@ -56,7 +58,7 @@ Matrix<T>::Matrix(char *data_file_path){
     std::cerr << data_file_path << std::endl;
     std::ifstream in(data_file_path, std::ios::binary);
     if (!in.is_open()) {
-        std::cout << "open file error" << std::endl;
+        std::cerr << "open file error" << std::endl;
         exit(-1);
     }
     in.read((char*)&d, 4);
@@ -73,6 +75,38 @@ Matrix<T>::Matrix(char *data_file_path){
         in.seekg(4, std::ios::cur);
         in.read((char*)(data + i * d), d * 4);
     }
+    in.close();
+}
+
+template <typename T>
+Matrix<T>::Matrix(char *data_file_path, bool from_fdat){
+    M = 0; Ks = 0; sub_vec_len = 0;
+    data = NULL;
+    std::cerr << data_file_path << std::endl;
+    std::ifstream in(data_file_path, std::ios::binary);
+    if (!in.is_open()) {
+        std::cout << "open file error" << std::endl;
+        exit(-1);
+    }
+    in.read((char*)&M, 4);
+    in.read((char*)&Ks, 4);
+    in.read((char*)&sub_vec_len, 4);
+    
+    std::cerr << M << " segments (sub-codebooks), "<< Ks << " centroids in each segment (sub-codebook), " 
+    <<  sub_vec_len << " len of each segment" <<std::endl;
+    // in.seekg(0, std::ios::end);
+    // std::ios::pos_type ss = in.tellg();
+    // size_t fsize = (size_t)ss;
+    // n = (size_t)(fsize / (d + 1) / 4);
+    // data = new T [(size_t)n * (size_t)d];
+    // std::cerr << "Cardinality - " << n << std::endl;
+    data = new T [(size_t)M * (size_t)Ks * (size_t)sub_vec_len];
+    in.seekg(12, std::ios::beg);
+    in.read((char*)(data), M * Ks * sub_vec_len * 4);
+    // for (size_t i = 0; i < (size_t)M * (size_t)Ks; i++) {
+    //     in.seekg(4, std::ios::cur);
+    //     in.read((char*)(data + i * sub), d * 4);
+    // }
     in.close();
 }
 

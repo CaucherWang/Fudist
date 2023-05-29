@@ -1,7 +1,7 @@
 
 cd ..
-
 g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src
+# g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -ffast-math
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -lprofiler
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -mavx2
 # path=./data/

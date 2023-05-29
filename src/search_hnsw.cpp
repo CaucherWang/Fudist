@@ -17,6 +17,7 @@
 #include "paa.h"
 #include "svd.h"
 #include "lsh.h"
+#include "pq.h"
 
 #include <getopt.h>
 
@@ -71,6 +72,7 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
             lsh::cur_query_label = i;
             adsampling::cur_query_label = i;
             svd::cur_query_label = i;
+            pq::cur_query_label = i;
 #ifndef WIN32
             float sys_t, usr_t, usr_t_sum = 0;  
             struct rusage run_start, run_end;
@@ -139,10 +141,10 @@ int main(int argc, char * argv[]) {
 
     // 0: original HNSW, 1: HNSW++ 2: HNSW+ 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: Finger
     //                             20:HNSW+-keep
-    int randomize = 5;
+    int randomize = 6;
     // string exp_name = "LSH16-.95";
     // string exp_name = "ADSKeep2.1-32";
-    string exp_name = "SVD";
+    string exp_name = "PQ8-256";
     // string exp_name = "SIMD";
     // string exp_name = "";
     int subk=20;
@@ -151,13 +153,16 @@ int main(int argc, char * argv[]) {
     int paa_segment = 96;
     int lsh_dim = 16;
     double lsh_p_tau = 0.95;
+    int pq_m = 8;
+    int pq_ks = 256;
+    float pq_epsilon = 1.0;
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
     string data_str = "gist";
     string ef_str = "500";
     string M_str ="16";
-    string index_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
     string result_path_str = result_base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log";
     string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs";
@@ -168,6 +173,11 @@ int main(int argc, char * argv[]) {
     string svd_trans_path_str = base_path_str + "/" + data_str + "/SVD.fvecs";
     string svd_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_base.fvecs";
     string paa_path_str = base_path_str + "/" + data_str + "/PAA_" + to_string(paa_segment) + "_" + data_str + "_base.fvecs";
+    string pq_codebook_path_str = base_path_str + "/" + data_str + "/PQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
+    string pq_codes_path_str = base_path_str + "/" + data_str + "/PQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
+    string opq_rotation_path_str = base_path_str + "/" + data_str + "/OPQ_rotation_" + to_string(pq_m) + "_" + to_string(pq_ks)  + ".fvecs";
+    string opq_codebook_path_str = base_path_str + "/" + data_str + "/OPQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
+    string opq_codes_path_str = base_path_str + "/" + data_str + "/OPQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
     char index_path[256];
     strcpy(index_path, index_path_str.c_str());
     char query_path[256] = "";
@@ -192,6 +202,16 @@ int main(int argc, char * argv[]) {
     strcpy(svd_trans_path, svd_trans_path_str.c_str());
     char svd_path[256] = "";
     strcpy(svd_path, svd_path_str.c_str());
+    char pq_codebook_path[256] = "";
+    strcpy(pq_codebook_path, pq_codebook_path_str.c_str());
+    char pq_codes_path[256] = "";
+    strcpy(pq_codes_path, pq_codes_path_str.c_str());
+    char opq_codebook_path[256] = "";
+    strcpy(opq_codebook_path, opq_codebook_path_str.c_str());
+    char opq_codes_path[256] = "";
+    strcpy(opq_codes_path, opq_codes_path_str.c_str());
+    char opq_rotation_path[256] = "";
+    strcpy(opq_rotation_path, opq_rotation_path_str.c_str());
 
 
     while(iarg != -1){
@@ -278,6 +298,36 @@ int main(int argc, char * argv[]) {
         svd::queries_svd = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         svd::D = Q.d;
+    }else if(randomize == 6){
+        pq::M = pq_m;
+        pq::Ks = pq_ks;
+        pq::sub_vec_len = Q.d / pq_m;
+        Matrix<float> tmp(pq_codebook_path, true);
+        pq::init_codebook(tmp);
+        pq::pq_codes_base = Matrix<int>(pq_codes_path);
+        pq::pq_codes_base.M = pq::pq_codes_base.d;
+        // svd::svd_table = Matrix<float>(svd_path);
+        StopW stopw = StopW();
+        pq::calc_dist_book(Q);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        pq::D = Q.d;
+        pq::epsilon = pq_epsilon;
+    }else if(randomize == 7){
+        pq::M = pq_m;
+        pq::Ks = pq_ks;
+        pq::sub_vec_len = Q.d / pq_m;
+        Matrix<float> tmp(opq_codebook_path, true);
+        pq::init_codebook(tmp);
+        Matrix<float>Rotation(opq_rotation_path);
+        pq::pq_codes_base = Matrix<int>(opq_codes_path);
+        pq::pq_codes_base.M = pq::pq_codes_base.d;
+        // svd::svd_table = Matrix<float>(svd_path);
+        StopW stopw = StopW();
+        auto rotQ = mul(Q, Rotation);
+        pq::calc_dist_book(rotQ);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        pq::D = Q.d;
+        pq::epsilon = pq_epsilon;
     }
     
     L2Space l2space(Q.d);
