@@ -1,6 +1,14 @@
 .vscode/
-data/
+data/deep*
+data/gist*
+data/glove1.2m*
+data/imagenet*
+data/msong*
+data/sift*
+data/tiny5m*
+data/ukbench*
+data/word2vec*
 results/
-src/Eigen/
 src/index_hnsw
 src/search_hnsw
+prof/

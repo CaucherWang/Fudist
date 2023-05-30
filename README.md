@@ -1,9 +1,16 @@
-# [SIGMOD 2023] High-Dimensional Approximate Nearest Neighbor Search: with Reliable and Efficient Distance Comparison Operations
+# [] Fudist: An efficient distance approximation tool to accelerate the search of approximate nearest neighbors
 
-We note that we have included detailed comments of our core algorithms in 
-* `./src/adsampling.h`
-* `./src/hnswlib/hnswalg.h`
-* `./src/ivf/ivf.h`
+We benchmark the performance of the following algorithms w.r.t. the distance approximation part:
+1. ADSampling
+2. LSH-APG (LSH-pruning part)
+3. PQ
+4. OPQ
+5. SVD (idea from $\tau$-MNG)
+6. PAA
+
+And we benchmark and combine many heuristic idea and engineering optimizations from SOTA papers.
+After that, we propose Fudist, the best tool for distance approximation and pruning in ANN search.
+
 
 ## Prerequisites
 
