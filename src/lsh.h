@@ -43,7 +43,9 @@ namespace lsh{
         }
 
         dis *= coeffq;
-
+#ifdef COUNT_DIMENSION
+    adsampling::tot_dimension += lowdim;
+#endif
         return dis >= bsf ? -dis : dis;
     }
 

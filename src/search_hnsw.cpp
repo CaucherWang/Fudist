@@ -141,10 +141,11 @@ int main(int argc, char * argv[]) {
 
     // 0: original HNSW, 1: HNSW++ 2: HNSW+ 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: Finger
     //                             20:HNSW+-keep
-    int randomize = 6;
-    // string exp_name = "LSH16-.95";
+    //                                                                 71: OPQ++
+    int randomize = 4;
+    string exp_name = "LSH16";
     // string exp_name = "ADSKeep2.1-32";
-    string exp_name = "PQ8-256";
+    // string exp_name = "OPQ+8-256";
     // string exp_name = "SIMD";
     // string exp_name = "";
     int subk=20;
@@ -152,14 +153,14 @@ int main(int argc, char * argv[]) {
     float ads_delta_d = 32;
     int paa_segment = 96;
     int lsh_dim = 16;
-    double lsh_p_tau = 0.95;
+    double lsh_p_tau = 0.9;
     int pq_m = 8;
     int pq_ks = 256;
-    float pq_epsilon = 1.0;
+    float pq_epsilon = 0.9;
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    string data_str = "gist";
+    string data_str = "gist";   // dataset name
     string ef_str = "500";
     string M_str ="16";
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
@@ -298,7 +299,7 @@ int main(int argc, char * argv[]) {
         svd::queries_svd = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         svd::D = Q.d;
-    }else if(randomize == 6){
+    }else if(randomize == 6 || randomize == 61){
         pq::M = pq_m;
         pq::Ks = pq_ks;
         pq::sub_vec_len = Q.d / pq_m;
@@ -312,7 +313,7 @@ int main(int argc, char * argv[]) {
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         pq::D = Q.d;
         pq::epsilon = pq_epsilon;
-    }else if(randomize == 7){
+    }else if(randomize == 7 || randomize == 71){
         pq::M = pq_m;
         pq::Ks = pq_ks;
         pq::sub_vec_len = Q.d / pq_m;
