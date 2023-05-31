@@ -16,6 +16,8 @@ namespace pq{
     // codebook: M * Ks * sub_vec_len, query_dist_book: n * M * Ks
     Matrix<float> codebook, query_dist_book;
     float epsilon = 1.1;
+    float qeo_check_threshold;
+    int qeo_check_num;
 
     unsigned int cur_query_label;
 
@@ -60,8 +62,9 @@ namespace pq{
 
         float dis = 0;  
         int i = 0;
+        auto start = cur_query_label * M * Ks;
         for(; i < M; ++i){
-            dis += query_dist_book.data[cur_query_label * M * Ks + i * Ks + cand[i]];
+            dis += query_dist_book.data[start + i * Ks + cand[i]];
             // if(dis >= bsf){
             //     break;
             // }
@@ -73,6 +76,23 @@ namespace pq{
 #endif
 
         return dis >= epsilon * bsf ? -dis : dis;
+    }
+
+    float dist_comp_naive(const float& bsf, unsigned label){
+        int * cand = &pq_codes_base.data[label * M];
+
+        float dis = 0;  
+        int i = 0;
+        for(; i < M; ++i){
+            dis += query_dist_book.data[cur_query_label * M * Ks + i * Ks + cand[i]];
+        }
+
+#ifdef COUNT_DIMENSION            
+    adsampling::tot_dimension += i;
+    // adsampling::tot_comp_dim += i;
+#endif
+
+        return dis >= bsf ? -dis : dis;
     }
 
         static float

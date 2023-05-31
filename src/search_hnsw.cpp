@@ -184,14 +184,15 @@ int main(int argc, char * argv[]) {
 
     // 0: original HNSW, 1: ADS+ 2: ADS 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: PCA
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
-    //                                         41:LSH+            71: OPQ+ 81:PCA+
-    int randomize = 81;
+    //                                         41:LSH+            71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
+    //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
+    int randomize = 72;
     // string exp_name = "ADS";
     // string exp_name = "LSH64";
     // string exp_name = "ADSKeep";
     // string exp_name = "OPQ+8-256";
     // string exp_name = "SIMD";
-    string exp_name = "PCA+";
+    string exp_name = "OPQ!8-256";
     // string exp_name = "";
     int subk=20;
     float ads_epsilon0 = 2.1;
@@ -203,6 +204,8 @@ int main(int argc, char * argv[]) {
     int pq_m = 8;
     int pq_ks = 256;
     float pq_epsilon = 0.9;
+    float qeo_check_threshold = 0.95;
+    int qeo_check_num = 2;
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
@@ -275,7 +278,7 @@ int main(int argc, char * argv[]) {
     strcpy(svd_index_path, SVD_index_path_str.c_str());
     char pca_index_path[256] = "";
     strcpy(pca_index_path, PCA_index_path_str.c_str());
-\
+
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:i:q:g:r:t:n:k:e:p:", longopts, &ind);
@@ -411,7 +414,7 @@ int main(int argc, char * argv[]) {
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         svd::D = Q.d;
         svd::delta_d = svd_delta_d;
-    }else if(randomize == 6 || randomize == 61){
+    }else if(randomize == 6 || randomize == 61 || randomize == 62){
         pq::M = pq_m;
         pq::Ks = pq_ks;
         pq::sub_vec_len = Q.d / pq_m;
@@ -425,7 +428,14 @@ int main(int argc, char * argv[]) {
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         pq::D = Q.d;
         pq::epsilon = pq_epsilon;
-    }else if(randomize == 7 || randomize == 71){
+        cout << pq_epsilon << " ";
+        if(randomize == 62){
+            cout << qeo_check_threshold << " " << qeo_check_num;
+            pq::qeo_check_threshold = qeo_check_threshold;
+            pq::qeo_check_num = qeo_check_num;
+        }
+        cout << endl;
+    }else if(randomize == 7 || randomize == 71 || randomize == 72){
         pq::M = pq_m;
         pq::Ks = pq_ks;
         pq::sub_vec_len = Q.d / pq_m;
@@ -441,6 +451,13 @@ int main(int argc, char * argv[]) {
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         pq::D = Q.d;
         pq::epsilon = pq_epsilon;
+        cout << pq_epsilon << " ";
+        if(randomize == 72){
+            pq::qeo_check_threshold = qeo_check_threshold;
+            pq::qeo_check_num = qeo_check_num;
+            cout << qeo_check_threshold << " " << qeo_check_num;
+        }
+        cout << endl;
     }
     
     L2Space l2space(Q.d);
