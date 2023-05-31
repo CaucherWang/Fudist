@@ -4,6 +4,8 @@
 // #define EIGEN_DONT_VECTORIZE
 #define COUNT_DIMENSION
 #define COUNT_DIST_TIME
+// #define ED2IP
+#define USE_SIMD
 
 #include <iostream>
 #include <fstream>
@@ -98,6 +100,9 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
             adsampling::cur_query_label = i;
             svd::cur_query_label = i;
             pq::cur_query_label = i;
+#ifdef ED2IP
+    hnswlib::cur_query_vec_len = hnswlib::query_vec_len[i];
+#endif
 #ifndef WIN32
             float sys_t, usr_t, usr_t_sum = 0;  
             struct rusage run_start, run_end;
@@ -186,14 +191,14 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                                         41:LSH+            71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 72;
+    int randomize = 0;
     // string exp_name = "ADS";
     // string exp_name = "LSH64";
     // string exp_name = "ADSKeep";
     // string exp_name = "OPQ+8-256";
     // string exp_name = "SIMD";
-    string exp_name = "OPQ!8-256";
-    // string exp_name = "";
+    // string exp_name = "OPQ!8-256";
+    string exp_name = "";
     int subk=20;
     float ads_epsilon0 = 2.1;
     float ads_delta_d = 16;
@@ -217,7 +222,14 @@ int main(int argc, char * argv[]) {
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string SVD_index_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
-    string result_path_str = result_base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log";
+    string result_prefix_str = "";
+    #ifdef USE_SIMD
+    result_prefix_str += "SIMD_";
+    #endif
+    #ifdef ED2IP
+    result_prefix_str += "IP_";
+    #endif
+    string result_path_str = result_base_path_str + "/" + data_str + "/" + result_prefix_str + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log";
     string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs";
     string trans_path_str = base_path_str + "/" + data_str + "/O.fvecs";
     string transed_data_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_base.fvecs";
@@ -279,7 +291,6 @@ int main(int argc, char * argv[]) {
     char pca_index_path[256] = "";
     strcpy(pca_index_path, PCA_index_path_str.c_str());
 
-
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:i:q:g:r:t:n:k:e:p:", longopts, &ind);
         switch (iarg){
@@ -320,7 +331,13 @@ int main(int argc, char * argv[]) {
     Matrix<float> Q(query_path);
     Matrix<unsigned> G(groundtruth_path);
 
-    // InnerProductSpace ip_space(Q.d);
+#ifdef ED2IP
+    string base_vec_len_path = base_path_str + "/" + data_str + "/base_vec_len.floats";
+    hnswlib::base_vec_len = read_from_floats(base_vec_len_path.c_str());
+    hnswlib::query_vec_len = vec_len(Q);
+    InnerProductSpace ip_space(Q.d);
+    hnswlib::fstdistfuncIP = ip_space.get_dist_func();
+#endif  
 
     cout << "result path: "<< result_path << endl;
 

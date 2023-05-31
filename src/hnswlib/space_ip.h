@@ -296,7 +296,22 @@ namespace hnswlib {
 
         size_t qty_left = qty - qty16;
         float res_tail = InnerProduct(pVect1, pVect2, &qty_left);
+        
         return 1.0f - (res + res_tail);
+    }
+
+    static float
+    InnerProductSIMD16ExtResiduals(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
+        size_t qty = *((size_t *) qty_ptr);
+        size_t qty16 = qty >> 4 << 4;
+        float res = InnerProductSIMD16Ext(pVect1v, pVect2v, &qty16);
+        float *pVect1 = (float *) pVect1v + qty16;
+        float *pVect2 = (float *) pVect2v + qty16;
+
+        size_t qty_left = qty - qty16;
+        float res_tail = InnerProduct(pVect1, pVect2, &qty_left);
+        
+        return (res + res_tail);
     }
 
     static float
@@ -313,6 +328,21 @@ namespace hnswlib {
 
         return 1.0f - (res + res_tail);
     }
+
+    static float
+    InnerProductSIMD4ExtResiduals(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
+        size_t qty = *((size_t *) qty_ptr);
+        size_t qty4 = qty >> 2 << 2;
+
+        float res = InnerProductSIMD4Ext(pVect1v, pVect2v, &qty4);
+        size_t qty_left = qty - qty4;
+
+        float *pVect1 = (float *) pVect1v + qty4;
+        float *pVect2 = (float *) pVect2v + qty4;
+        float res_tail = InnerProduct(pVect1, pVect2, &qty_left);
+
+        return (res + res_tail);
+    }
 #endif
 
     class InnerProductSpace : public SpaceInterface<float> {
@@ -322,38 +352,72 @@ namespace hnswlib {
         size_t dim_;
     public:
         InnerProductSpace(size_t dim) {
-            fstdistfunc_ = InnerProductDistance;
+            fstdistfunc_ = InnerProduct;
+
+    // fstdistfunc_ = InnerProductDistance;
+
+#ifdef USE_SIMD
     #if defined(USE_AVX) || defined(USE_SSE) || defined(USE_AVX512)
         #if defined(USE_AVX512)
             if (AVX512Capable()) {
                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX512;
-                InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX512;
             } else if (AVXCapable()) {
                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
-                InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX;
             }
         #elif defined(USE_AVX)
             if (AVXCapable()) {
                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
-                InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX;
             }
         #endif
         #if defined(USE_AVX)
             if (AVXCapable()) {
                 InnerProductSIMD4Ext = InnerProductSIMD4ExtAVX;
-                InnerProductDistanceSIMD4Ext = InnerProductDistanceSIMD4ExtAVX;
             }
         #endif
 
             if (dim % 16 == 0)
-                fstdistfunc_ = InnerProductDistanceSIMD16Ext;
+                fstdistfunc_ = InnerProductSIMD16Ext;
             else if (dim % 4 == 0)
-                fstdistfunc_ = InnerProductDistanceSIMD4Ext;
+                fstdistfunc_ = InnerProductSIMD4Ext;
             else if (dim > 16)
-                fstdistfunc_ = InnerProductDistanceSIMD16ExtResiduals;
+                fstdistfunc_ = InnerProductSIMD16ExtResiduals;
             else if (dim > 4)
-                fstdistfunc_ = InnerProductDistanceSIMD4ExtResiduals;
+                fstdistfunc_ = InnerProductSIMD4ExtResiduals;
     #endif
+
+
+    // #if defined(USE_AVX) || defined(USE_SSE) || defined(USE_AVX512)
+    //     #if defined(USE_AVX512)
+    //         if (AVX512Capable()) {
+    //             InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX512;
+    //             InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX512;
+    //         } else if (AVXCapable()) {
+    //             InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
+    //             InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX;
+    //         }
+    //     #elif defined(USE_AVX)
+    //         if (AVXCapable()) {
+    //             InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
+    //             InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX;
+    //         }
+    //     #endif
+    //     #if defined(USE_AVX)
+    //         if (AVXCapable()) {
+    //             InnerProductSIMD4Ext = InnerProductSIMD4ExtAVX;
+    //             InnerProductDistanceSIMD4Ext = InnerProductDistanceSIMD4ExtAVX;
+    //         }
+    //     #endif
+
+    //         if (dim % 16 == 0)
+    //             fstdistfunc_ = InnerProductDistanceSIMD16Ext;
+    //         else if (dim % 4 == 0)
+    //             fstdistfunc_ = InnerProductDistanceSIMD4Ext;
+    //         else if (dim > 16)
+    //             fstdistfunc_ = InnerProductDistanceSIMD16ExtResiduals;
+    //         else if (dim > 4)
+    //             fstdistfunc_ = InnerProductDistanceSIMD4ExtResiduals;
+    // #endif
+#endif
             dim_ = dim;
             data_size_ = dim * sizeof(float);
         }

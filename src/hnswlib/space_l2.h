@@ -1,7 +1,21 @@
 #pragma once
 #include "hnswlib.h"
-
+#include "space_ip.h"
 namespace hnswlib {
+
+#ifdef ED2IP
+    float *base_vec_len;
+    float *query_vec_len;
+    DISTFUNC<float> fstdistfuncIP;
+    float cur_query_vec_len;
+
+    float L2Sqr_by_IP(const void *query_data, const void* vec_data, unsigned vec_label, void *dist_func_param){
+        float cur_base_vec_len = hnswlib::base_vec_len[vec_label];
+        float curdist = fstdistfuncIP(query_data, vec_data, dist_func_param);
+        return cur_base_vec_len + hnswlib::cur_query_vec_len - 2 * curdist;
+
+    }
+#endif
 
     static float
     L2Sqr(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
@@ -210,34 +224,36 @@ namespace hnswlib {
         DISTFUNC<float> fstdistfunc_;
         size_t data_size_;
         size_t dim_;
+        
     public:
         L2Space(size_t dim) {
             fstdistfunc_ = L2Sqr;
             // We block SIMD optimization.
             
-    // #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
-    //         std::cout << "Using SSE!" << std::endl;
-    //     #if defined(USE_AVX512)
-    //         if (AVX512Capable())
-    //             L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX512;
-    //         else if (AVXCapable())
-    //             L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
-    //     #elif defined(USE_AVX)
-    //         if (AVXCapable())
-    //             L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
-    //     #endif
+#ifdef USE_SIMD
+    #if defined(USE_SSE) || defined(USE_AVX) || defined(USE_AVX512)
+            std::cout << "Using SSE!" << std::endl;
+        #if defined(USE_AVX512)
+            if (AVX512Capable())
+                L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX512;
+            else if (AVXCapable())
+                L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
+        #elif defined(USE_AVX)
+            if (AVXCapable())
+                L2SqrSIMD16Ext = L2SqrSIMD16ExtAVX;
+        #endif
 
-    //         if (dim % 16 == 0)
-    //             fstdistfunc_ = L2SqrSIMD16Ext;
-    //         else if (dim % 4 == 0)
-    //             fstdistfunc_ = L2SqrSIMD4Ext;
-    //         else if (dim > 16)
-    //             fstdistfunc_ = L2SqrSIMD16ExtResiduals;
-    //         else if (dim > 4)
-    //             fstdistfunc_ = L2SqrSIMD4ExtResiduals;
-    //         std::cout << fstdistfunc_ << std::endl;
-    // #endif
-            
+            if (dim % 16 == 0)
+                fstdistfunc_ = L2SqrSIMD16Ext;
+            else if (dim % 4 == 0)
+                fstdistfunc_ = L2SqrSIMD4Ext;
+            else if (dim > 16)
+                fstdistfunc_ = L2SqrSIMD16ExtResiduals;
+            else if (dim > 4)
+                fstdistfunc_ = L2SqrSIMD4ExtResiduals;
+            std::cout << fstdistfunc_ << std::endl;
+    #endif
+#endif
             
             dim_ = dim;
             data_size_ = dim * sizeof(float);

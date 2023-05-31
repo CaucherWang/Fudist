@@ -282,7 +282,12 @@ namespace hnswlib {
 #ifdef COUNT_DIST_TIME
                 StopW stopw = StopW();
 #endif
-                dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+#ifndef ED2IP
+            dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+#else
+            dist_t dist = hnswlib::L2Sqr_by_IP(data_point, getDataByInternalId(ep_id), getExternalLabel(ep_id), dist_func_param_);
+#endif
+
 #ifdef COUNT_DIST_TIME
                 adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif          
@@ -333,7 +338,11 @@ namespace hnswlib {
 #ifdef COUNT_DIST_TIME
                         StopW stopw = StopW();
 #endif
-                        dist_t dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+#ifndef ED2IP
+            dist_t dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+#else
+            dist_t dist = hnswlib::L2Sqr_by_IP(data_point, currObj1, getExternalLabel(candidate_id), dist_func_param_);
+#endif
 #ifdef COUNT_DIST_TIME
                         adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif                  
@@ -1191,7 +1200,6 @@ adsampling::tot_dimension+= adsampling::D;
             return answers;
         }
      
-
         template <bool has_deletions, bool collect_metrics=false>
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>>
         searchBaseLayerPQ(tableint ep_id, const void *data_point, size_t ef) const {
@@ -1495,7 +1503,6 @@ adsampling::tot_dimension+= pq::D;
             visited_list_pool_->releaseVisitedList(vl);
             return top_candidates;
         }
-
 
         template <bool has_deletions, bool collect_metrics=false>
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>>
@@ -2846,7 +2853,11 @@ adsampling::tot_dimension+= adsampling::D;
 #ifdef COUNT_DIST_TIME
             StopW stopw = StopW();
 #endif
+#ifndef ED2IP
             dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+#else
+            dist_t curdist = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(enterpoint_node_), getExternalLabel(enterpoint_node_), dist_func_param_);
+#endif
 #ifdef COUNT_DIST_TIME
             adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif
@@ -2895,9 +2906,6 @@ adsampling::tot_dimension+= adsampling::D;
 #ifdef COUNT_DIST_TIME
                             adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif
-#ifdef COUNT_DIMENSION
-                            adsampling::tot_dimension += adsampling::D;
-#endif
                             if(d > 0){
                                 adsampling::tot_full_dist++;
                                 if(d < curdist){
@@ -2906,7 +2914,7 @@ adsampling::tot_dimension+= adsampling::D;
                                     changed = true;
                                 }
                             }
-                        }else if (adaptive == 3){
+                        }else if (adaptive == 3){       //deprecated
                             dist_t d = paa::dist_comp(curdist, getExternalLabel(cand));
 
                             if(d > 0){
@@ -2933,7 +2941,11 @@ adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
 #ifdef COUNT_DIST_TIME
 StopW stopw = StopW();
 #endif
-                                d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+#ifndef ED2IP
+            d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+#else
+            d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
+#endif
 #ifdef COUNT_DIST_TIME
 adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif                  
@@ -2993,9 +3005,16 @@ adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
 #ifdef COUNT_DIST_TIME
 StopW stopw = StopW();
 #endif
-                                d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+#ifndef ED2IP
+            d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+#else
+            d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
+#endif
 #ifdef COUNT_DIST_TIME
 adsampling::distance_time += stopw.getElapsedTimeMicro();
+#endif
+#ifdef COUNT_DIMENSION
+adsampling::tot_dimension+= pq::D;
 #endif
 
                                 if(d < curdist){
@@ -3009,7 +3028,11 @@ adsampling::distance_time += stopw.getElapsedTimeMicro();
 #ifdef COUNT_DIST_TIME
                             StopW stopw = StopW();
 #endif
-                            dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+#ifndef ED2IP
+            dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+#else
+            dist_t d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
+#endif
 #ifdef COUNT_DIST_TIME
                             adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif

@@ -144,6 +144,24 @@ Matrix<T> mul(const Matrix<T> &A, const Matrix<T> &B){
 }
 
 template<typename T>
+float* vec_len(const Matrix<T> &A){
+
+    Eigen::MatrixXf _A(A.n, A.d);
+
+    float* result = new float[A.n];
+
+    for(int i=0;i<A.n;i++)
+        for(int j=0;j<A.d;j++)
+            _A(i,j)=A.data[i*A.d+j];
+    
+    for(int i = 0; i < A.n; i++){
+        result[i] = _A.row(i).squaredNorm();
+    }
+    
+    return result;
+}
+
+template<typename T>
 Matrix<float> to_paa(const Matrix<T> &A, unsigned seg_num){
 
     Matrix<float> result(A.n, seg_num);
