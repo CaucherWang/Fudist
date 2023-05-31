@@ -12,3 +12,4 @@ results/
 src/index_hnsw
 src/search_hnsw
 prof/
+figures/fig

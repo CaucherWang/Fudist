@@ -2,19 +2,20 @@ import os
 import numpy as np
 import struct
 from numba import njit
+import math
 
 source = './data/'
-datasets = ['gist']
+datasets = ['imagenet', 'ukbench', 'word2vec']
 datasets_map = {
-    # 'imagenet': (0, 200),
-    # 'msong': (42, 1000),
-    # 'word2vec': (30, 1000),
-    # 'ukbench': (0, 200),
-    'deep': (16, 1000),
-    'gist': (96, 1000),
-    'glove1.2m': (20, 1000),
-    'sift': (16, 1000),
-    # 'tiny5m': (24, 1000),
+    # 'imagenet': (6, 200),
+    # 'msong': (6, 1000),
+    # 'word2vec': (6, 1000),
+    # 'ukbench': (8, 200),
+    'deep': (8, 1000),
+    'gist': (8, 1000),
+    'glove1.2m': (8, 1000),
+    'sift': (8, 1000),
+    # 'tiny5m': (8, 1000),
 }
 
 def read_fvecs(filename, c_contiguous=True):
@@ -41,38 +42,10 @@ def to_fvecs(filename, data):
                 a = struct.pack('f', x)
                 fp.write(a)
 
-
-# @njit
-def paa_transform(X, w):
-    # X is a numpy array where each row is a time series
-    # w is the number of segments
-    
-    n, m = X.shape
-    X_paa = np.zeros((n, w))
-    
-    for i in range(w):
-        start = int(i * m / w)
-        end = int((i + 1) * m / w)
-        X_paa[:, i] = np.mean(X[:, start:end], axis=1)
-    
-    return X_paa
-
-def compute_mean(matrix):
-    return np.mean(matrix, axis=0)
-
-def sort_with_positions(arr):
-    # create a list of tuples where the first element is the value
-    # and the second element is the original position in the array
-    arr_with_positions = [(val, i) for i, val in enumerate(arr)]
-
-    # sort the list of tuples by the first element (the value)
-    sorted_arr_with_positions = sorted(arr_with_positions)
-
-    # create two separate arrays, one for the sorted values and one for the original positions
-    sorted_arr = [val for val, _ in sorted_arr_with_positions]
-    positions = [pos for _, pos in sorted_arr_with_positions]
-
-    return sorted_arr, positions
+def Orthogonal(D):
+    G = np.random.randn(D, D).astype('float32')
+    Q, _ = np.linalg.qr(G)
+    return Q
 
 def to_floats(filename, data):
     print(f"Writing File - {filename}")
@@ -80,9 +53,10 @@ def to_floats(filename, data):
         for y in data:
             a = struct.pack('f', y)
             fp.write(a)
+            
 
 @njit
-def calc_approx_dist(X, Q, RealDist):
+def calc_approx_dist(X, Q, RealDist, r):
     # Q: query vector
     # X_code: PQ encoded base vector
     # RealDist: real distance between Q and X
@@ -90,7 +64,7 @@ def calc_approx_dist(X, Q, RealDist):
     result = []
     for i in range(Q.shape[0]):
         for j in range(X.shape[0]):
-            dist = np.sum((Q[i] - X[j]) ** 2)
+            dist = np.sum((Q[i] - X[j]) ** 2) / r
             if RealDist[i][j] == 0:
                 if dist == 0:
                     result.append(1)
@@ -98,38 +72,52 @@ def calc_approx_dist(X, Q, RealDist):
                 result.append(dist / RealDist[i][j])
     return result
 
+def ratio(D, i, epsilon0):
+    if i == D:
+        return 1.0
+    return 1.0 * i / D * (1.0 + epsilon0 / math.sqrt(i)) * (1.0 + epsilon0 / math.sqrt(i))
+
 if __name__ == "__main__":
     
     for dataset in datasets_map.keys():
+        np.random.seed(0)
         
         # path
         path = os.path.join(source, dataset)
         data_path = os.path.join(path, f'{dataset}_base.fvecs')
-        
-        w = datasets_map[dataset][0]
 
         # read data vectors
         # print(f"Reading {dataset} from {data_path}.")
         # X = read_fvecs(data_path)
         # D = X.shape[1]
-        
-        # print(f"PAA {dataset} of dimensionality {D}.")
-        # PAA = paa_transform(X, w)
 
-        transformed_path = os.path.join(path, f'PAA_{w}_{dataset}_base.fvecs')
-        # to_fvecs(transformed_path, PAA)
-        
-        
+        # # generate random orthogonal matrix, store it and apply it
+        # print(f"Randomizing {dataset} of dimensionality {D}.")
+        # P = Orthogonal(D)
+        # XP = np.dot(X, P)
+
+        projection_path = os.path.join(path, 'O.fvecs')
+        transformed_path = os.path.join(path, f'O{dataset}_base.fvecs')
+
+        # to_fvecs(projection_path, P)
+        # to_fvecs(transformed_path, XP)
+
         sampleQuery = datasets_map[dataset][1]
         sampleBase = 10000
         query_path = os.path.join(path, f'{dataset}_query.fvecs')
         dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
-        X = read_fvecs(transformed_path)[:sampleBase]
+        sample = 0.2
+        U = read_fvecs(projection_path)
+        lowdim = int(U.shape[0] * sample)
+        r = ratio(U.shape[0], lowdim, 2.1)
+        
+        X = read_fvecs(transformed_path)[:sampleBase, :lowdim]
         Q = read_fvecs(query_path)[:sampleQuery]
-        Q = paa_transform(Q, w)
-        result = calc_approx_dist(X, Q, read_fvecs(dist_path))
+        Q = np.dot(Q, U)[ : , :lowdim]
+        RealDist = read_fvecs(dist_path)
+        result = calc_approx_dist(X, Q, RealDist, r)
         result = np.array(result)
         result = np.sort(result)
-        result_path = os.path.join(path, f'PAA_{w}_approx_dist.floats')
+        result_path = os.path.join(path, f'ADS_{sample}_approx_dist.floats')
         to_floats(result_path, result)
         

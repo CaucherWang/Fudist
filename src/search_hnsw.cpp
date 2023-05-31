@@ -3,7 +3,7 @@
 // #define EIGEN_DONT_PARALLELIZE
 // #define EIGEN_DONT_VECTORIZE
 #define COUNT_DIMENSION
-// #define COUNT_DIST_TIME
+#define COUNT_DIST_TIME
 
 #include <iostream>
 #include <fstream>
@@ -27,6 +27,31 @@ using namespace hnswlib;
 const int MAXK = 100;
 
 long double rotation_time=0;
+
+float *read_from_floats(const char *data_file_path){
+    float * data = NULL;
+    std::cerr << "Reading "<< data_file_path << std::endl;
+    std::ifstream in(data_file_path, std::ios::binary);
+    if (!in.is_open()) {
+        std::cout << "open file error" << std::endl;
+        exit(-1);
+    }
+    in.seekg(0, std::ios::end);
+    std::ios::pos_type ss = in.tellg();
+    size_t fsize = (size_t)ss;
+    size_t n = (size_t)(fsize / 4);
+    // data = new T [(size_t)n * (size_t)d];
+    // std::cerr << "Cardinality - " << n << std::endl;
+    data = new float [(size_t)n];
+    in.seekg(0, std::ios::beg);
+    in.read((char*)(data), fsize);
+    // for (size_t i = 0; i < (size_t)M * (size_t)Ks; i++) {
+    //     in.seekg(4, std::ios::cur);
+    //     in.read((char*)(data + i * sub), d * 4);
+    // }
+    in.close();
+    return data;
+}
 
 static void get_gt(unsigned int *massQA, float *massQ, size_t vecsize, size_t qsize, L2Space &l2space,
        size_t vecdim, vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, size_t subk, HierarchicalNSW<float> &appr_alg) {
@@ -94,18 +119,36 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
     }
 
     long double time_us_per_query = total_time / qsize / 3.0 + rotation_time;
+    long double dist_calc_time = adsampling::distance_time / qsize / 3.0;
+    long double app_dist_calc_time = adsampling::approx_dist_time / qsize / 3.0;
+    long double approx_dist_per_query = adsampling::tot_approx_dist / (double)qsize / 3.0;
+    long double full_dist_per_query = adsampling::tot_full_dist / (double)qsize / 3.0;
+    long double tot_dist_per_query = adsampling::tot_dist_calculation / (double)qsize / 3.0;
+    long double tot_dim_per_query = adsampling::tot_dimension / (double)qsize / 3.0;
     long double recall = 1.0f * correct / total;
+
+    cout << setprecision(6);
     
     // cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " " << adsampling::tot_dimension + adsampling::tot_full_dist * vecdim << endl;
-    cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " ||| comp. ratio: " << (long double)adsampling::tot_full_dist / (long double)adsampling::tot_dist_calculation 
-    << " ||| preprocess time: " << rotation_time  << " ||| # total dist: " << adsampling::tot_dist_calculation << " ||| total dimensions: "<< adsampling::tot_dimension 
+    cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query 
+    << " ||| full dist time: " << dist_calc_time << " ||| approx. dist time: " << app_dist_calc_time 
+    << " ||| #full dists: " << full_dist_per_query << " ||| #approx. dist: " << approx_dist_per_query 
+    << endl << "\t\t" 
+    << " ||| # total dists: " << (long long) tot_dist_per_query << " ||| total dimensions: "<< (long long)tot_dim_per_query
+    // << (long double)adsampling::tot_full_dist / (long double)adsampling::tot_dist_calculation 
+    << " ||| pruining ratio (vector-level): " <<  (1 - full_dist_per_query / tot_dist_per_query) * 100.0
+    << " ||| pruning ratio (dimension-level)" << (1 - tot_dim_per_query / (tot_dist_per_query * vecdim)) * 100.0
+    << " ||| preprocess time: " << rotation_time  
     << endl;
     return ;
 }
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    vector<size_t> efs{500, 800, 1500};
+    vector<size_t> efs{200, 500, 750, 1000, 1500, 2000};
+    // vector<size_t> efs{2500, 3000};
+    // vector<size_t> efs{3500, 4000};
+    // vector<size_t> efs{4500, 5000};
         // ProfilerStart("../prof/svd-profile.prof");
     for (size_t ef : efs) {
         appr_alg.setEf(ef);
@@ -139,20 +182,23 @@ int main(int argc, char * argv[]) {
     int iarg = -1;
     opterr = 1;    //getopt error message (off: 0)
 
-    // 0: original HNSW, 1: HNSW++ 2: HNSW+ 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: Finger
-    //                             20:HNSW+-keep
-    //                                                                 71: OPQ++
-    int randomize = 4;
-    string exp_name = "LSH16";
-    // string exp_name = "ADSKeep2.1-32";
+    // 0: original HNSW, 1: ADS+ 2: ADS 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: PCA
+    //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
+    //                                         41:LSH+            71: OPQ+ 81:PCA+
+    int randomize = 81;
+    // string exp_name = "ADS";
+    // string exp_name = "LSH64";
+    // string exp_name = "ADSKeep";
     // string exp_name = "OPQ+8-256";
     // string exp_name = "SIMD";
+    string exp_name = "PCA+";
     // string exp_name = "";
     int subk=20;
     float ads_epsilon0 = 2.1;
-    float ads_delta_d = 32;
+    float ads_delta_d = 16;
+    float svd_delta_d = 64;
     int paa_segment = 96;
-    int lsh_dim = 16;
+    int lsh_dim = 160;
     double lsh_p_tau = 0.9;
     int pq_m = 8;
     int pq_ks = 256;
@@ -164,6 +210,9 @@ int main(int argc, char * argv[]) {
     string ef_str = "500";
     string M_str ="16";
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string SVD_index_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
     string result_path_str = result_base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log";
     string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs";
@@ -172,7 +221,10 @@ int main(int argc, char * argv[]) {
     string lsh_trans_path_str = base_path_str + "/" + data_str + "/LSH" + to_string(lsh_dim) + ".fvecs";
     string lsh_path_str = base_path_str + "/" + data_str + "/LSH" + to_string(lsh_dim) + "_" + data_str + "_base.fvecs";
     string svd_trans_path_str = base_path_str + "/" + data_str + "/SVD.fvecs";
+    string pca_trans_path_str = base_path_str + "/" + data_str + "/PCA.fvecs";
     string svd_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_base.fvecs";
+    string pca_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_base.fvecs";
+    string pca_dist_distribution_path_str = base_path_str + "/" + data_str + "/PCA_dist_distrib.floats";
     string paa_path_str = base_path_str + "/" + data_str + "/PAA_" + to_string(paa_segment) + "_" + data_str + "_base.fvecs";
     string pq_codebook_path_str = base_path_str + "/" + data_str + "/PQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
     string pq_codes_path_str = base_path_str + "/" + data_str + "/PQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
@@ -201,8 +253,12 @@ int main(int argc, char * argv[]) {
     strcpy(lsh_path, lsh_path_str.c_str());
     char svd_trans_path[256] = "";
     strcpy(svd_trans_path, svd_trans_path_str.c_str());
+    char pca_trans_path[256] = "";
+    strcpy(pca_trans_path, pca_trans_path_str.c_str());
     char svd_path[256] = "";
     strcpy(svd_path, svd_path_str.c_str());
+    char pca_path[256] = "";
+    strcpy(pca_path, pca_path_str.c_str());
     char pq_codebook_path[256] = "";
     strcpy(pq_codebook_path, pq_codebook_path_str.c_str());
     char pq_codes_path[256] = "";
@@ -213,7 +269,13 @@ int main(int argc, char * argv[]) {
     strcpy(opq_codes_path, opq_codes_path_str.c_str());
     char opq_rotation_path[256] = "";
     strcpy(opq_rotation_path, opq_rotation_path_str.c_str());
-
+    char ads_index_path[256] = "";
+    strcpy(ads_index_path, ADS_index_path_str.c_str());
+    char svd_index_path[256] = "";
+    strcpy(svd_index_path, SVD_index_path_str.c_str());
+    char pca_index_path[256] = "";
+    strcpy(pca_index_path, PCA_index_path_str.c_str());
+\
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:i:q:g:r:t:n:k:e:p:", longopts, &ind);
@@ -262,11 +324,19 @@ int main(int argc, char * argv[]) {
     // adsampling::D = Q.d;
     freopen(result_path,"a",stdout);
     if(randomize == 1 || randomize == 2){
+        cout << setprecision(2) << ads_epsilon0 << " " << ads_delta_d;
+        if(randomize == 1) cout << " tight BSF";
+        cout << endl;
         Matrix<float> P(transformation_path);
         StopW stopw = StopW();
         Q = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         adsampling::D = Q.d;
+        adsampling::epsilon0 = ads_epsilon0;
+        adsampling::delta_d = ads_delta_d;
+        adsampling::init_ratios();
+        memset(index_path, 0, sizeof(index_path));
+        strcpy(index_path, ads_index_path);
     }else if(randomize == 20){
         Matrix<float> P(transformation_path);
         adsampling::project_table = Matrix<float>(transed_data_path);
@@ -274,6 +344,9 @@ int main(int argc, char * argv[]) {
         adsampling::queries_project = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         adsampling::D = Q.d;
+        adsampling::epsilon0 = ads_epsilon0;
+        adsampling::delta_d = ads_delta_d;
+        adsampling::init_ratios();
     }else if(randomize == 3){
         paa::paa_table = Matrix<float>(paa_path);
         StopW stopw = StopW();
@@ -282,7 +355,10 @@ int main(int argc, char * argv[]) {
         paa::D = Q.d;
         paa::segment_num = paa_segment;
         paa::len_per_seg = paa::D / paa::segment_num;
-    }else if(randomize == 4){
+    }else if(randomize == 4 || randomize == 41){
+        cout << setprecision(2) << lsh_p_tau;
+        if(randomize == 41) cout << "tight BSF";
+        cout <<endl;
         Matrix<float> P(lsh_trans_path);
         lsh::lsh_table = Matrix<float>(lsh_path);
         StopW stopw = StopW();
@@ -292,13 +368,49 @@ int main(int argc, char * argv[]) {
         lsh::probQ = lsh_p_tau;
         lsh::lowdim = P.d;
         lsh::initialize();
-    }else if(randomize == 5){
+    }else if(randomize == 50){
         Matrix<float> P(svd_trans_path);
-        // svd::svd_table = Matrix<float>(svd_path);
+        svd::svd_table = Matrix<float>(svd_path);
         StopW stopw = StopW();
         svd::queries_svd = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         svd::D = Q.d;
+        svd::delta_d = svd_delta_d;
+    }else if(randomize == 5){
+        Matrix<float> P(svd_trans_path);
+        // svd::svd_table = Matrix<float>(svd_path);
+        StopW stopw = StopW();
+        Q = mul(Q, P);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        svd::D = Q.d;
+        svd::delta_d = svd_delta_d;
+        memset(index_path, 0, sizeof(index_path));
+        strcpy(index_path, svd_index_path);
+    } else if(randomize == 8 || randomize == 81){
+        Matrix<float> P(pca_trans_path);
+        // svd::svd_table = Matrix<float>(svd_path);
+        StopW stopw = StopW();
+        Q = mul(Q, P);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        svd::D = Q.d;
+        svd::delta_d = svd_delta_d;
+        memset(index_path, 0, sizeof(index_path));
+        strcpy(index_path, pca_index_path);
+        if(randomize == 81){
+            auto ret = read_from_floats(pca_dist_distribution_path_str.c_str());
+            for(int i = 0; i < Q.d; ++i){
+                ret[i] = 1.0 / ret[i];
+            }
+            svd::amp_ratios = ret;
+        }
+    }else if(randomize == 80){
+        Matrix<float> P(pca_trans_path);
+        svd::svd_table = Matrix<float>(pca_path);
+        StopW stopw = StopW();
+        svd::queries_svd = mul(Q, P);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        svd::D = Q.d;
+        svd::delta_d = svd_delta_d;
     }else if(randomize == 6 || randomize == 61){
         pq::M = pq_m;
         pq::Ks = pq_ks;

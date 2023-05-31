@@ -24,10 +24,13 @@ unsigned int D = 960; // The dimensionality of the dataset.
 float epsilon0 = 2.1;  // epsilon0 - by default 2.1, recommended in [1.0,4.0], valid in in [0, +\infty) 
 unsigned int delta_d = 32; // dimension sampling for every delta_d dimensions.
 
-long double distance_time = 0;
+vector<float> ratios;   // 0 for 0, 1 for deltaD, 2 for 2 deltaD
+
+long double distance_time = 0, approx_dist_time = 0;
 unsigned long long tot_dimension = 0;
 unsigned long long tot_dist_calculation = 0;
 unsigned long long tot_full_dist = 0;
+unsigned long long tot_approx_dist = 0;
 // unsigned long long tot_comp_dim =0;
 
 void clear(){
@@ -35,15 +38,26 @@ void clear(){
     tot_dimension = 0;
     tot_dist_calculation = 0;
     tot_full_dist = 0;
+    approx_dist_time = 0;
+    tot_approx_dist = 0;
     // tot_comp_dim = 0;
 }
+
 
 // The hypothesis testing checks whether \sqrt{D/d} dis' > (1 +  epsilon0 / \sqrt{d}) * r.
 // We equivalently check whether dis' > \sqrt{d/D} * (1 +  epsilon0 / \sqrt{d}) * r.
 inline float ratio(const int &D, const int &i){
     if(i == D)return 1.0;
     return 1.0 * i / D * (1.0 + epsilon0 / std::sqrt(i)) * (1.0 + epsilon0 / std::sqrt(i));
-}    
+}   
+
+
+void init_ratios(){
+    ratios.push_back(0);
+    for(int i = delta_d; i < D; i+=delta_d){
+        ratios.push_back(ratio(D, i));
+    }
+}
 
 /*
     float dist_comp(const float&, const void *, const void *, float, int) is a generic function for DCOs.
@@ -53,7 +67,7 @@ inline float ratio(const int &D, const int &i){
 float dist_comp(const float& dis, const void *data, const void *query, 
                     float res = 0, int i = 0){
     // If the algorithm starts a non-zero dimensionality (i.e., the case of IVF++), we conduct the hypothesis testing immediately. 
-    if(i && res >= dis * ratio(D, i)){
+    if(i && res >= dis * ratios[i / delta_d]){
 #ifdef COUNT_DIMENSION            
         tot_dimension += i;
 #endif
@@ -73,7 +87,7 @@ float dist_comp(const float& dis, const void *data, const void *query,
             res += t * t;  
         }
         // Hypothesis tesing
-        if(res >= dis * ratio(D, i)){
+        if(i<D && res >= dis * ratios[i / delta_d]){
 #ifdef COUNT_DIMENSION            
             tot_dimension += i;
 #endif                
@@ -108,7 +122,7 @@ float dist_comp_keep(const float& bsf, unsigned label){
             res += t * t;  
         }
         // Hypothesis tesing
-        if(i < D && res >= bsf * ratio(D, i)){
+        if(i < D && res >= bsf * ratios[i / delta_d]){
 #ifdef COUNT_DIMENSION            
             tot_dimension += i;
 #endif                

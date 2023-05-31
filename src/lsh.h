@@ -16,8 +16,8 @@ namespace lsh{
 
     unsigned int lowdim; // number of hash functions 
 
-    double coeffq;
-    double probQ;  // p-tau
+    float coeffq;
+    float probQ;  // p-tau
 
     Matrix<float> lsh_table, queries_lsh;
 
@@ -34,12 +34,16 @@ namespace lsh{
 
     float dist_comp(const float& bsf, unsigned label){
 
-        float * q = &queries_lsh.data[cur_query_label * lowdim];
-        float* lsh_v = &lsh_table.data[label * lowdim];
+        float * q = queries_lsh.data + cur_query_label * lowdim;
+        float* lsh_v = lsh_table.data + label * lowdim;
         float dis = 0;
+        float t;
 
         for(int i = 0; i < lowdim; ++i){
-            dis += (q[i] - lsh_v[i]) * (q[i] - lsh_v[i]);
+            t = *q - *lsh_v;
+            q++;
+            lsh_v++;
+            dis += t * t;
         }
 
         dis *= coeffq;
