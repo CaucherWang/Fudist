@@ -5,7 +5,7 @@
 #define COUNT_DIMENSION
 #define COUNT_DIST_TIME
 // #define ED2IP
-#define USE_SIMD
+// #define USE_SIMD
 
 #include <iostream>
 #include <fstream>
@@ -17,6 +17,7 @@
 #include "hnswlib/hnswlib.h"
 #include "adsampling.h"
 #include "paa.h"
+#include "dwt.h"
 #include "svd.h"
 #include "lsh.h"
 #include "pq.h"
@@ -150,7 +151,7 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    vector<size_t> efs{200, 500, 750, 1000, 1500, 2000};
+    vector<size_t> efs{100, 150, 200};
     // vector<size_t> efs{2500, 3000};
     // vector<size_t> efs{3500, 4000};
     // vector<size_t> efs{4500, 5000};
@@ -187,11 +188,14 @@ int main(int argc, char * argv[]) {
     int iarg = -1;
     opterr = 1;    //getopt error message (off: 0)
 
+    // Edited by hr
+    // 9: DWT
+
     // 0: original HNSW, 1: ADS+ 2: ADS 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: PCA
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                                         41:LSH+            71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 0;
+    int randomize = 9;
     // string exp_name = "ADS";
     // string exp_name = "LSH64";
     // string exp_name = "ADSKeep";
@@ -221,6 +225,7 @@ int main(int argc, char * argv[]) {
     string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string SVD_index_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string DWT_index_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
     string result_prefix_str = "";
     #ifdef USE_SIMD
@@ -240,6 +245,8 @@ int main(int argc, char * argv[]) {
     string svd_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_base.fvecs";
     string pca_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_base.fvecs";
     string pca_dist_distribution_path_str = base_path_str + "/" + data_str + "/PCA_dist_distrib.floats";
+    string dwt_data_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_base.fvecs";
+    string dwt_query_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_query.fvecs";
     string paa_path_str = base_path_str + "/" + data_str + "/PAA_" + to_string(paa_segment) + "_" + data_str + "_base.fvecs";
     string pq_codebook_path_str = base_path_str + "/" + data_str + "/PQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
     string pq_codes_path_str = base_path_str + "/" + data_str + "/PQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
@@ -290,6 +297,10 @@ int main(int argc, char * argv[]) {
     strcpy(svd_index_path, SVD_index_path_str.c_str());
     char pca_index_path[256] = "";
     strcpy(pca_index_path, PCA_index_path_str.c_str());
+    char dwt_index_path[256] = "";
+    strcpy(dwt_index_path, DWT_index_path_str.c_str());
+    char dwt_query_path[256] = "";
+    strcpy(dwt_query_path, dwt_query_path_str.c_str());
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:i:q:g:r:t:n:k:e:p:", longopts, &ind);
@@ -475,6 +486,14 @@ int main(int argc, char * argv[]) {
             cout << qeo_check_threshold << " " << qeo_check_num;
         }
         cout << endl;
+    } else if(randomize == 9){
+        StopW stopw = StopW();
+        Q = Matrix<float>(dwt_query_path);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        dwt::D = Q.d;
+        // dwt::delta_d = svd_delta_d;
+        memset(index_path, 0, sizeof(index_path));
+        strcpy(index_path, dwt_index_path);
     }
     
     L2Space l2space(Q.d);
