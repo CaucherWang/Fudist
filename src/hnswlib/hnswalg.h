@@ -1142,8 +1142,8 @@ adsampling::tot_dimension+= adsampling::D;
 #ifdef COUNT_DIST_TIME
                             StopW stopw = StopW();
 
-                            int pos;
-#endif                            
+#endif                           
+                            int pos;   
                             dist_t dist = svd::dist_comp2_pos(lowerBound, currObj1, data_point, pos);
 #ifdef COUNT_DIST_TIME
                             adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
@@ -1855,7 +1855,7 @@ adsampling::tot_dimension+= adsampling::D;
                             adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif    
 #ifdef COUNT_DIMENSION
-adsampling::tot_dimension+= lsh::D;
+adsampling::tot_dimension+= adsampling::D;
 #endif                                        
                             adsampling::tot_full_dist ++;
                             if (!has_deletions || !isMarkedDeleted(candidate_id))
