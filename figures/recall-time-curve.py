@@ -44,10 +44,17 @@ datsets_map = {
     'glove1.2m': (128, 8, 20),
     'sift': (16, 8, 16),
     'tiny5m': (16, 8),
+    'uqv':(16, 8, 16),
+    'glove-100':(16, 4, 16),
+    'crawl': (16, 6, 16),
+    'enron':(16, 8, 64),
+    'mnist':(8, 8, 64),
+    'cifar': (8,8,64),
+    'sun': (8, 8, 64)
 }
 
 source = './results/'
-dataset = 'deep'
+dataset = 'sun'
 ef = 500
 M = datsets_map[dataset][0]
 pq_m = datsets_map[dataset][1]
@@ -67,7 +74,7 @@ ads = resolve_log(ads_path)
 lsh = resolve_log(lsh_path)
 pca = resolve_log(pca_path)
 # pq = resolve_log(pq_path)
-opq = resolve_log(opq_path)
+# opq = resolve_log(opq_path)
 
 k = 20
 width = 1.4

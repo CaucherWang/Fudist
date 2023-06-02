@@ -10,7 +10,7 @@ import numpy as np
 from multiprocessing.dummy import Pool as ThreadPool
 
 source = './data/'
-datasets = ['gist']
+datasets = ['trevi']
 
 
 
@@ -139,6 +139,19 @@ def compute_GT_CPU(xb, xq, gt_sl):
     
     return data_ids, data_dis
 
+def read_ivecs(filename, c_contiguous=True):
+    fv = np.fromfile(filename, dtype=np.int32)
+    if fv.size == 0:
+        return np.zeros((0, 0))
+    dim = fv.view(np.int32)[0]
+    assert dim > 0
+    fv = fv.reshape(-1, 1 + dim)
+    if not all(fv.view(np.int32)[:, 0] == dim):
+        raise IOError("Non-uniform vector sizes in " + filename)
+    fv = fv[:, 1:]
+    if c_contiguous:
+        fv = fv.copy()
+    return fv
 
 if __name__ == '__main__':
     for dataset in datasets:
@@ -154,7 +167,7 @@ if __name__ == '__main__':
         print(X.shape)
         
         # read data vectors
-        print(f"Reading {dataset} from {data_path}.")
+        print(f"Reading {dataset} from {query_path}.")
         Q = read_fvecs(query_path)
         QD = Q.shape[1]
         print(Q.shape)
@@ -164,6 +177,10 @@ if __name__ == '__main__':
         GT_I, GT_D = compute_GT_CPU(X, Q, K)
         print(GT_I.shape)
         
+        
+        
         gt_path = os.path.join(path, f'{dataset}_groundtruth.ivecs')
+        
+        gt = read_ivecs(gt_path)
         
         to_ivecs(GT_I, gt_path)

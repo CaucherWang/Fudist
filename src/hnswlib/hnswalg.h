@@ -147,7 +147,7 @@ namespace hnswlib {
         size_t label_offset_;
         DISTFUNC<dist_t> fstdistfunc_;
         void *dist_func_param_;
-        std::unordered_map<labeltype, tableint> label_lookup_;
+        std::unordered_map<labeltype, tableint> label_lookup_;  // external label -> internal id
 
         std::default_random_engine level_generator_;
         std::default_random_engine update_probability_generator_;
@@ -961,7 +961,7 @@ adsampling::tot_dimension+= lsh::D;
                     break;
                 }
                 candidate_set.pop();
-
+                
                 // Fetch the smallest object in S. 
                 tableint current_node_id = current_node_pair.second;
                 int *data = (int *) get_linklist0(current_node_id);

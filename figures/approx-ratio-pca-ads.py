@@ -25,7 +25,7 @@ datsets_map = {
     'gist': (8, 1000, 96),
     'glove1.2m': (8, 1000, 20),
     'sift': (8, 1000, 16),
-    # 'tiny5m': (8, 1000),
+    'tiny5m': (8, 1000),
 }
 
 # for dataset in datsets_map:
@@ -41,7 +41,7 @@ datsets_map = {
 
 ratios = {}
 source = './data/'
-dataset = 'sift'
+dataset = 'tiny5m'
 path = os.path.join(source, dataset)
 for sample in [0.2, 0.4, 0.6, 0.8]:
     ratios[f'ADS-{sample}'] = list(read_floats(os.path.join(path, f'ADS_{sample}_approx_dist.floats')))

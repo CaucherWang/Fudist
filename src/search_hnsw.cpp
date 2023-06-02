@@ -150,8 +150,8 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000};
-    // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300};
+    // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000};
+    vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
     // vector<size_t> efs{4000, 5000, 6000, 7000, 8000};
@@ -197,11 +197,11 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 8;
-    string exp_name = "PCA";
+    int randomize = 4;
+    // string exp_name = "PCA";
     // string exp_name = "ADS";
     // string exp_name = "LSH16";
-    // string exp_name = "LSH64";
+    string exp_name = "LSH96";
     // string exp_name = "PQ8-256";
     // string exp_name = "OPQ8-256";
     // string exp_name = "OPQ!8-256";
@@ -211,7 +211,7 @@ int main(int argc, char * argv[]) {
     float ads_delta_d = 16;
     float svd_delta_d = 64;
     int paa_segment = 96;
-    int lsh_dim = 64;
+    int lsh_dim = 96;
     double lsh_p_tau = 0.95;
     int pq_m = 8;   // msong, imagenet:6
     int pq_ks = 256;
@@ -221,8 +221,8 @@ int main(int argc, char * argv[]) {
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    string data_str = "tiny5m";   // dataset name
-    string ef_str = "500";
+    string data_str = "trevi";   // dataset name
+    string ef_str = "500"; // 3000 for uqv
     string M_str ="16"; // 8 for msong, 12 for deep
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";

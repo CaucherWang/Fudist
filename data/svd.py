@@ -8,15 +8,25 @@ from sklearn.decomposition import PCA
 source = './data/'
 datasets = ['gist']
 datasets_map = {
-    'imagenet': (6, 200),
-    'msong': (6, 1000),
-    'word2vec': (6, 1000),
-    'ukbench': (8, 200),
+    # 'imagenet': (6, 200),
+    # 'msong': (6, 1000),
+    # 'word2vec': (6, 1000),
+    # 'ukbench': (8, 200),
     # 'gist': (8, 1000),
     # 'deep': (8, 1000),
     # 'glove1.2m': (8, 1000),
     # 'sift': (8, 1000),
-    'tiny5m': (8, 1000),
+    # 'tiny5m': (8, 1000),
+    # 'uqv':(8,1000),
+    # 'glove-100':(4,1000),
+    # 'crawl': (6, 1000),
+    # 'enron': (8, 1000),
+    # 'mnist': (8, 1000),
+    # 'cifar': (8, 1000),
+    'sun':(8, 200),
+    'notre':(8, 200),
+    'nuswide':(4, 200),
+    'trevi': (8, 200)
 }
 
 
@@ -128,7 +138,6 @@ if __name__ == "__main__":
         print(f"PCA {dataset} of dimensionality {D}.")
         pca = PCA(n_components=D)
         pca.fit(X)
-        # XU = pca.fit_transform(X)
         s = pca.singular_values_
         U = pca.components_
         
