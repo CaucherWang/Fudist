@@ -5,7 +5,8 @@ import nanopq
 from numba import njit
 
 source = './data/'
-datasets = ['deep', 'glove1.2m']
+datasets = ['trevi']
+# datasets = ['deep', 'glove1.2m']
 # datasets = ['word2vec', 'imagenet']
 # datasets = ['msong', 'sift', 'tiny5m', 'ukbench', 'word2vec']
 

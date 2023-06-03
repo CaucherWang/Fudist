@@ -3,6 +3,7 @@ import numpy as np
 import struct
 import nanopq
 import h5py
+import pickle
 
 source = './data/'
 datasets = ['imagenet']
@@ -22,9 +23,9 @@ datasets_map = {
     # 'crawl': (6, 1000),
     # 'mnist': (8, 1000),
     # 'cifar': (8, 1000),
-    'sun':(8, 200),
-    'notre':(8, 200),
-    'nuswide':(4, 200),
+    # 'sun':(8, 200),
+    # 'notre':(8, 200),
+    # 'nuswide':(4, 200),
     'trevi': (8, 200)
 }
 
@@ -104,7 +105,6 @@ if __name__ == "__main__":
     
     for dataset in datasets_map.keys():
         np.random.seed(0)
-        M = 6
         Ks = 256
 
         
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         path = os.path.join(source, dataset)
         data_path = os.path.join(path, f'{dataset}_base.fvecs')
         query_path = os.path.join(path, f'{dataset}_query.fvecs')
-        # dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
+        dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
 
         # read data vectors
         print(f"Reading {dataset} from {data_path}.")
@@ -128,9 +128,9 @@ if __name__ == "__main__":
         print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
         assert D == Q.shape[1]
         
-        # RealDist = read_fvecs(dist_path)
-        # sampleQuery = RealDist.shape[0]
-        # sampleBase = RealDist.shape[1]
+        RealDist = read_fvecs(dist_path)
+        sampleQuery = RealDist.shape[0]
+        sampleBase = RealDist.shape[1]
         
         
         pq = nanopq.OPQ(M=M, Ks=Ks, verbose=True)

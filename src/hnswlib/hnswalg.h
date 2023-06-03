@@ -1006,7 +1006,7 @@ adsampling::tot_dimension+= lsh::D;
                             StopW stopw = StopW();
 #endif                     
                             // dist_t dist = svd::dist_comp(lowerBound, getExternalLabel(candidate_id));
-                            dist_t dist = svd::dist_comp2(lowerBound, getDataByInternalId(candidate_id), data_point);
+                            dist_t dist = svd::dist_comp2_deltad(lowerBound, getDataByInternalId(candidate_id), data_point);
                             // cout << getExternalLabel(candidate_id) << endl;
 #ifdef COUNT_DIST_TIME
                             adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
@@ -1288,9 +1288,12 @@ adsampling::tot_dimension+= pq::D;
                         }
                         // Otherwise, conduct DCO with ADSampling wrt the N_ef th NN. 
                         else {
+                            adsampling::tot_approx_dist++;
 #ifdef COUNT_DIST_TIME
                             StopW stopw = StopW();
-#endif                     
+#endif          
+                            unsigned cand_label = getExternalLabel(current_node_id);
+                            unsigned label = getExternalLabel(candidate_id);
                             dist_t dist = pq::dist_comp(lowerBound, getExternalLabel(candidate_id));
                             // cout << getExternalLabel(candidate_id) << endl;
 #ifdef COUNT_DIST_TIME
@@ -1319,6 +1322,13 @@ adsampling::tot_dimension+= pq::D;
                                         lowerBound = top_candidates.top().first;
                                 }
                             }
+#ifdef COUNT_FN
+                            else{
+                                dist_t real_dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_); 
+                                if(real_dist < lowerBound)
+                                    adsampling::tot_fn++;
+                            }
+#endif
                         }
                     }
                 }

@@ -88,6 +88,7 @@ if __name__ == "__main__":
         
         sampleQuery = datasets_map[dataset][1]
         sampleBase = 10000
+        lowdim = 64
 
         
         # path
@@ -101,43 +102,43 @@ if __name__ == "__main__":
         D = X.shape[1]
         print(f"{dataset} of dimensionality {D} of cardinality {X.shape[0]}.")
         
-        # query_path = os.path.join(path, f'{dataset}_query.fvecs')
-        # dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
-        # Q = read_fvecs(query_path)
-        # print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
-        # assert D == Q.shape[1]
+        query_path = os.path.join(path, f'{dataset}_query.fvecs')
+        dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
+        Q = read_fvecs(query_path)
+        print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
+        assert D == Q.shape[1]
         
-        # RealDist = read_fvecs(dist_path)
-        # sampleQuery = RealDist.shape[0]
-        # sampleBase = RealDist.shape[1]
+        RealDist = read_fvecs(dist_path)
+        sampleQuery = RealDist.shape[0]
+        sampleBase = RealDist.shape[1]
 
         
         # generate random orthogonal matrix, store it and apply it
-        lowdim = 16
-        print(f"LSH {dataset} of dimensionality {D}.")
-        P = generate_matrix(lowdim, D)
-        XP = np.dot(X, P.T)
+        
+        # print(f"LSH {dataset} of dimensionality {D}.")
+        # P = generate_matrix(lowdim, D)
+        # XP = np.dot(X, P.T)
         
         projection_path = os.path.join(path, f'LSH{lowdim}.fvecs')
         transformed_path = os.path.join(path, f'LSH{lowdim}_{dataset}_base.fvecs')
 
-        to_fvecs(projection_path, P.T)
-        to_fvecs(transformed_path, XP)
+        # to_fvecs(projection_path, P.T)
+        # to_fvecs(transformed_path, XP)
         
-        # P = read_fvecs(os.path.join(path, f'LSH{lowdim}.fvecs'))
-        # XP = np.dot(X[:sampleBase], P)
-        # XQ = np.dot(Q[:sampleQuery], P)
+        P = read_fvecs(os.path.join(path, f'LSH{lowdim}.fvecs'))
+        XP = np.dot(X[:sampleBase], P)
+        XQ = np.dot(Q[:sampleQuery], P)
         
-        # result = calc_approx_dist(XP, XQ, RealDist)
-        # print(len(result))
-        # # sort the result asc
-        # result = np.array(result)
-        # result = np.sort(result)
-        # # 90% percent of result
-        # print(result[int(len(result) * 0.9)])
+        result = calc_approx_dist(XP, XQ, RealDist)
+        print(len(result))
+        # sort the result asc
+        result = np.array(result)
+        result = np.sort(result)
+        # 90% percent of result
+        print(result[int(len(result) * 0.9)])
         
-        # result_path = os.path.join(path, f'LSH_{lowdim}_approx_dist.floats')
-        # to_floats(result_path, result)
+        result_path = os.path.join(path, f'LSH_{lowdim}_approx_dist.floats')
+        to_floats(result_path, result)
 
         
         
