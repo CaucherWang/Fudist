@@ -20,6 +20,7 @@
 #include "hnswlib/hnswlib.h"
 #include "adsampling.h"
 #include "paa.h"
+#include "dwt.h"
 #include "svd.h"
 #include "lsh.h"
 #include "pq.h"
@@ -240,6 +241,7 @@ int main(int argc, char * argv[]) {
     string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string SVD_index_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string DWT_index_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
     string result_prefix_str = "";
     #ifdef USE_SIMD
@@ -259,6 +261,8 @@ int main(int argc, char * argv[]) {
     string svd_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_base.fvecs";
     string pca_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_base.fvecs";
     string pca_dist_distribution_path_str = base_path_str + "/" + data_str + "/PCA_dist_distrib.floats";
+    string dwt_data_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_base.fvecs";
+    string dwt_query_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_query.fvecs";
     string paa_path_str = base_path_str + "/" + data_str + "/PAA_" + to_string(paa_segment) + "_" + data_str + "_base.fvecs";
     string pq_codebook_path_str = base_path_str + "/" + data_str + "/PQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
     string pq_codes_path_str = base_path_str + "/" + data_str + "/PQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
@@ -309,6 +313,10 @@ int main(int argc, char * argv[]) {
     strcpy(svd_index_path, SVD_index_path_str.c_str());
     char pca_index_path[256] = "";
     strcpy(pca_index_path, PCA_index_path_str.c_str());
+    char dwt_index_path[256] = "";
+    strcpy(dwt_index_path, DWT_index_path_str.c_str());
+    char dwt_query_path[256] = "";
+    strcpy(dwt_query_path, dwt_query_path_str.c_str());
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:i:q:g:r:t:n:k:e:p:", longopts, &ind);
@@ -498,6 +506,14 @@ int main(int argc, char * argv[]) {
             cout << qeo_check_threshold << " " << qeo_check_num;
         }
         cout << endl;
+    } else if(randomize == 9){
+        StopW stopw = StopW();
+        Q = Matrix<float>(dwt_query_path);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        dwt::D = Q.d;
+        // dwt::delta_d = svd_delta_d;
+        memset(index_path, 0, sizeof(index_path));
+        strcpy(index_path, dwt_index_path);
     }
     
     L2Space l2space(Q.d);
