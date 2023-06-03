@@ -37,11 +37,11 @@ lsh = {}
 finger = {}
 
 datsets_map = {
-    'imagenet': (16,6),
+    'imagenet': (16,6, 16),
     'msong': (8,6),
     'word2vec': (16,6),
     'ukbench': (16,8),
-    'deep': (12, 8, 16),
+    'deep': (16, 8, 16),
     'gist': (16, 8, 96),
     'glove1.2m': (128, 8, 20),
     'sift': (16, 8, 16),
@@ -55,11 +55,11 @@ datsets_map = {
     'sun': (8, 8, 64),
     'trevi':(16, 8, 64),
     'notre':(8, 8, 16),
-    'nuswide':(48, 8, 64),
+    'nuswide':(48, 10, 64),
 }
 
 source = './results/'
-dataset = 'deep'
+dataset = 'nuswide'
 ef = 500
 M = datsets_map[dataset][0]
 pq_m = datsets_map[dataset][1]

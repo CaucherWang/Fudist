@@ -1,12 +1,14 @@
 
 
+#define USE_SIMD
+
 // #define EIGEN_DONT_PARALLELIZE
 // #define EIGEN_DONT_VECTORIZE
-#define COUNT_DIMENSION
+// #define COUNT_DIMENSION
 // #define COUNT_FN
 // #define COUNT_DIST_TIME
-// #define USE_SIMD
 // #define ED2IP
+
 
 #include <iostream>
 #include <fstream>
@@ -162,9 +164,9 @@ static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, Hierarchi
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000};
     // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{300, 400, 500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
-    // vector<size_t> efs{4000, 5000, 6000, 7000, 8000};
+    // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
+    vector<size_t> efs{300, 400, 500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
+    // vector<size_t> efs{6000, 7000, 8000, 9000, 10000};
     // vector<size_t> efs{300, 400, 500, 600};
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{2000, 2500, 3000, 3500, 4000, 4500, 5000};
@@ -207,33 +209,33 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 7;
+    int randomize = 0;
     // string exp_name = "PCA";
     // string exp_name = "ADS";
     // string exp_name = "LSH16";
     // string exp_name = "LSH64";
     // string exp_name = "PQ8-256";
-    string exp_name = "OPQ8-256";
+    string exp_name = "OPQ10-256";
     // string exp_name = "OPQ!8-256";
     // string exp_name = "";
     int subk=20;
     float ads_epsilon0 = 2.1;
-    float ads_delta_d = 16;
-    float svd_delta_d = 64;
+    float ads_delta_d = 32;
+    float pca_delta_d = 32;
     int paa_segment = 96;
-    int lsh_dim = 64;
+    int lsh_dim = 16;
     double lsh_p_tau = 0.95;
-    int pq_m = 8;   // msong, imagenet:6
+    int pq_m = 10;   // msong, imagenet:6  nuswide:10
     int pq_ks = 256;
-    float pq_epsilon = 1.0;
+    float pq_epsilon = 0.9;
     float qeo_check_threshold = 0.95;
     int qeo_check_num = 2;
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    string data_str = "deep";   // dataset name
+    string data_str = "word2vec";   // dataset name
     string ef_str = "500"; // 3000 for uqv
-    string M_str ="12"; // 8 for msong, 12 for deep
+    string M_str ="48"; // 8 for msong, 48 for nuswide
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
@@ -413,7 +415,7 @@ int main(int argc, char * argv[]) {
         svd::queries_svd = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         svd::D = Q.d;
-        svd::delta_d = svd_delta_d;
+        svd::delta_d = pca_delta_d;
     }else if(randomize == 5){
         Matrix<float> P(svd_trans_path);
         // svd::svd_table = Matrix<float>(svd_path);
@@ -421,17 +423,20 @@ int main(int argc, char * argv[]) {
         Q = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         svd::D = Q.d;
-        svd::delta_d = svd_delta_d;
+        svd::delta_d = pca_delta_d;
         memset(index_path, 0, sizeof(index_path));
         strcpy(index_path, svd_index_path);
     } else if(randomize == 8 || randomize == 81){
         Matrix<float> P(pca_trans_path);
+        cout << pca_delta_d << " ";
+        if(randomize == 1) cout << " tight BSF";
+        cout << endl;
         // svd::svd_table = Matrix<float>(svd_path);
         StopW stopw = StopW();
         Q = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         svd::D = Q.d;
-        svd::delta_d = svd_delta_d;
+        svd::delta_d = pca_delta_d;
         memset(index_path, 0, sizeof(index_path));
         strcpy(index_path, pca_index_path);
         if(randomize == 81){
@@ -448,7 +453,7 @@ int main(int argc, char * argv[]) {
         svd::queries_svd = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
         svd::D = Q.d;
-        svd::delta_d = svd_delta_d;
+        svd::delta_d = pca_delta_d;
     }else if(randomize == 6 || randomize == 61 || randomize == 62){
         pq::M = pq_m;
         pq::Ks = pq_ks;

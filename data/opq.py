@@ -13,7 +13,7 @@ datasets_map = {
     # 'msong': (6, 1000),
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
-    # 'deep': (8, 1000),
+    # 'deep': (4, 1000),
     # 'gist': (8, 1000),
     # 'glove1.2m': (8, 1000),
     # 'sift': (8, 1000),
@@ -25,8 +25,8 @@ datasets_map = {
     # 'cifar': (8, 1000),
     # 'sun':(8, 200),
     # 'notre':(8, 200),
-    # 'nuswide':(4, 200),
-    'trevi': (8, 200)
+    'nuswide':(10, 200),
+    # 'trevi': (8, 200)
 }
 
 def to_ivecs(filename: str, array: np.ndarray):
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     
     for dataset in datasets_map.keys():
         np.random.seed(0)
-        Ks = 256
+        Ks = 512
 
         
         sampleQuery = datasets_map[dataset][1]
@@ -124,13 +124,13 @@ if __name__ == "__main__":
         X = read_fvecs(data_path)
         D = X.shape[1]
         print(f"{dataset} of dimensionality {D} of cardinality {X.shape[0]}.")
-        Q = read_fvecs(query_path)
-        print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
-        assert D == Q.shape[1]
+        # Q = read_fvecs(query_path)
+        # print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
+        # assert D == Q.shape[1]
         
-        RealDist = read_fvecs(dist_path)
-        sampleQuery = RealDist.shape[0]
-        sampleBase = RealDist.shape[1]
+        # RealDist = read_fvecs(dist_path)
+        # sampleQuery = RealDist.shape[0]
+        # sampleBase = RealDist.shape[1]
         
         
         pq = nanopq.OPQ(M=M, Ks=Ks, verbose=True)
