@@ -1065,7 +1065,7 @@ adsampling::tot_dimension+= lsh::D;
                 adsampling::tot_dist_calculation++;
                 adsampling::tot_full_dist ++;
 #ifdef COUNT_DIMENSION
-                adsampling::tot_dimension+= svd::D;
+                adsampling::tot_dimension+= dwt::D;
 #endif
                 lowerBound = dist;
                 top_candidates.emplace(dist, ep_id);
@@ -1117,7 +1117,7 @@ adsampling::tot_dimension+= lsh::D;
 #endif                                         
                             adsampling::tot_full_dist ++;
 #ifdef COUNT_DIMENSION
-                            adsampling::tot_dimension+= svd::D;
+                            adsampling::tot_dimension+= dwt::D;
 #endif
                             if (!has_deletions || !isMarkedDeleted(candidate_id))
                                 candidate_set.emplace(-dist, candidate_id);
