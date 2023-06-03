@@ -11,7 +11,7 @@ using namespace std;
 
 namespace svd{
     unsigned int D = 960;
-    unsigned int delta_d = 96; // dimension sampling for every delta_d dimensions.
+    unsigned int delta_d = 32; // dimension sampling for every delta_d dimensions.
 
     Matrix<float> svd_table, queries_svd;
 

@@ -45,7 +45,7 @@ def to_fvecs(filename, data):
 
 # return internal ids           
 def get_neighbors_with_internal_id(data_level_0, internal_id, size_data_per_element):
-    start = internal_id * size_data_per_element / 4
+    start = int(internal_id * size_data_per_element / 4)
     cnt = data_level_0[start]
     neighbors = []
     for i in range(cnt):
@@ -53,8 +53,8 @@ def get_neighbors_with_internal_id(data_level_0, internal_id, size_data_per_elem
     return neighbors
 
 # return internal ids
-def get_neighbors_with_external_label(data_level_0, external_label, size_data_per_element, id2label):
-    internal_id = id2label[external_label]
+def get_neighbors_with_external_label(data_level_0, external_label, size_data_per_element, label2id):
+    internal_id = label2id[external_label]
     return get_neighbors_with_internal_id(data_level_0, internal_id, size_data_per_element)
 
 source = './data/'
@@ -90,13 +90,15 @@ if __name__ == '__main__':
     internal_ids = ann_data['label_lookup_internal']
     external_ids = ann_data['label_lookup_external']
     id2label = {}
+    label2id = {}
     for i in range(len(internal_ids)):
         id2label[internal_ids[i]] = external_ids[i]
+        label2id[external_ids[i]] = internal_ids[i]
     
     
     for i in range(10):
         vec = X[i]  # or vec = index.get_items(np.array([i]))[0]
-        neighbors = get_neighbors_with_external_label(data_level_0, i, size_data_per_element, id2label)
+        neighbors = get_neighbors_with_external_label(data_level_0, i, size_data_per_element, label2id)
         for neighbor in neighbors:
             label = id2label[neighbor]
             neighbor_vec = X[label]

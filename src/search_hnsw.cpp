@@ -3,6 +3,7 @@
 // #define EIGEN_DONT_PARALLELIZE
 // #define EIGEN_DONT_VECTORIZE
 #define COUNT_DIMENSION
+// #define COUNT_FN
 // #define COUNT_DIST_TIME
 // #define USE_SIMD
 // #define ED2IP
@@ -131,6 +132,7 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
     long double full_dist_per_query = adsampling::tot_full_dist / (double)qsize / 3.0;
     long double tot_dist_per_query = adsampling::tot_dist_calculation / (double)qsize / 3.0;
     long double tot_dim_per_query = adsampling::tot_dimension / (double)qsize / 3.0;
+    double fn_ratio = adsampling::tot_fn / (double)adsampling::tot_approx_dist;
     long double recall = 1.0f * correct / total;
 
     cout << setprecision(6);
@@ -140,11 +142,19 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
     << " ||| full dist time: " << dist_calc_time << " ||| approx. dist time: " << app_dist_calc_time 
     << " ||| #full dists: " << full_dist_per_query << " ||| #approx. dist: " << approx_dist_per_query 
     << endl << "\t\t" 
-    << " ||| # total dists: " << (long long) tot_dist_per_query << " ||| total dimensions: "<< (long long)tot_dim_per_query
+    << " ||| # total dists: " << (long long) tot_dist_per_query 
+#ifdef COUNT_DIMENSION   
+    << " ||| total dimensions: "<< (long long)tot_dim_per_query
+#endif
     // << (long double)adsampling::tot_full_dist / (long double)adsampling::tot_dist_calculation 
     << " ||| pruining ratio (vector-level): " <<  (1 - full_dist_per_query / tot_dist_per_query) * 100.0
+#ifdef COUNT_DIMENSION
     << " ||| pruning ratio (dimension-level)" << (1 - tot_dim_per_query / (tot_dist_per_query * vecdim)) * 100.0
-    << " ||| preprocess time: " << rotation_time  
+#endif
+    << endl << "\t\t ||| preprocess time: " << rotation_time  
+#ifdef COUNT_FN
+    <<" ||| FALSE negative ratio = " << fn_ratio * 100.0
+#endif
     << endl;
     return ;
 }
@@ -152,9 +162,9 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000};
-    vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
+    // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
+    vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
+    // vector<size_t> efs{300, 400, 500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
     // vector<size_t> efs{4000, 5000, 6000, 7000, 8000};
     // vector<size_t> efs{300, 400, 500, 600};
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600};
@@ -198,13 +208,13 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 4;
+    int randomize = 7;
     // string exp_name = "PCA";
     // string exp_name = "ADS";
     // string exp_name = "LSH16";
-    string exp_name = "LSH96";
+    // string exp_name = "LSH64";
     // string exp_name = "PQ8-256";
-    // string exp_name = "OPQ8-256";
+    string exp_name = "OPQ8-256";
     // string exp_name = "OPQ!8-256";
     // string exp_name = "";
     int subk=20;
@@ -212,19 +222,19 @@ int main(int argc, char * argv[]) {
     float ads_delta_d = 16;
     float svd_delta_d = 64;
     int paa_segment = 96;
-    int lsh_dim = 96;
+    int lsh_dim = 64;
     double lsh_p_tau = 0.95;
     int pq_m = 8;   // msong, imagenet:6
     int pq_ks = 256;
-    float pq_epsilon = 1.2;
+    float pq_epsilon = 1.0;
     float qeo_check_threshold = 0.95;
     int qeo_check_num = 2;
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    string data_str = "trevi";   // dataset name
+    string data_str = "deep";   // dataset name
     string ef_str = "500"; // 3000 for uqv
-    string M_str ="16"; // 8 for msong, 12 for deep
+    string M_str ="12"; // 8 for msong, 12 for deep
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
@@ -450,6 +460,8 @@ int main(int argc, char * argv[]) {
     }else if(randomize == 6 || randomize == 61 || randomize == 62){
         pq::M = pq_m;
         pq::Ks = pq_ks;
+        pq::D = Q.d;
+        pq::epsilon = pq_epsilon;
         pq::sub_vec_len = Q.d / pq_m;
         Matrix<float> tmp(pq_codebook_path, true);
         pq::init_codebook(tmp);
@@ -458,9 +470,7 @@ int main(int argc, char * argv[]) {
         // svd::svd_table = Matrix<float>(svd_path);
         StopW stopw = StopW();
         pq::calc_dist_book(Q);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        pq::D = Q.d;
-        pq::epsilon = pq_epsilon;
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;   
         cout << pq_epsilon << " ";
         if(randomize == 62){
             cout << qeo_check_threshold << " " << qeo_check_num;
@@ -471,6 +481,8 @@ int main(int argc, char * argv[]) {
     }else if(randomize == 7 || randomize == 71 || randomize == 72){
         pq::M = pq_m;
         pq::Ks = pq_ks;
+        pq::D = Q.d;
+        pq::epsilon = pq_epsilon;
         pq::sub_vec_len = Q.d / pq_m;
         Matrix<float> tmp(opq_codebook_path, true);
         pq::init_codebook(tmp);
@@ -482,8 +494,6 @@ int main(int argc, char * argv[]) {
         auto rotQ = mul(Q, Rotation);
         pq::calc_dist_book(rotQ);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        pq::D = Q.d;
-        pq::epsilon = pq_epsilon;
         cout << pq_epsilon << " ";
         if(randomize == 72){
             pq::qeo_check_threshold = qeo_check_threshold;

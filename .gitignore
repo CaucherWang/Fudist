@@ -18,6 +18,7 @@ data/notre*
 data/nuswide*
 data/trevi*
 data/uqv*
+*.pkl
 results/
 src/index_hnsw
 src/search_hnsw

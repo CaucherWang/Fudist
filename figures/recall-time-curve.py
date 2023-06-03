@@ -13,14 +13,16 @@ def resolve_log(file_path):
         recall = []
         time = []
         for line in lines:
-            if(len(line) < 100):
-                recall.clear()
-                time.clear()
-                continue
             line = line.strip()
+            len_line = len(line)
             line = line.split(' ')
             if(line[0] == '|||'):
                 continue
+            if(len_line < 30):
+                recall.clear()
+                time.clear()
+                continue
+
             recall.append(float(line[1]))
             time.append(float(line[2]) / 1000.0)
         return recall, time
@@ -50,11 +52,14 @@ datsets_map = {
     'enron':(16, 8, 64),
     'mnist':(8, 8, 64),
     'cifar': (8,8,64),
-    'sun': (8, 8, 64)
+    'sun': (8, 8, 64),
+    'trevi':(16, 8, 64),
+    'notre':(8, 8, 16),
+    'nuswide':(48, 8, 64),
 }
 
 source = './results/'
-dataset = 'sun'
+dataset = 'deep'
 ef = 500
 M = datsets_map[dataset][0]
 pq_m = datsets_map[dataset][1]
@@ -74,7 +79,7 @@ ads = resolve_log(ads_path)
 lsh = resolve_log(lsh_path)
 pca = resolve_log(pca_path)
 # pq = resolve_log(pq_path)
-# opq = resolve_log(opq_path)
+opq = resolve_log(opq_path)
 
 k = 20
 width = 1.4
@@ -92,8 +97,8 @@ plt.plot(hnsw[1][:], hnsw[0][:], marker='d', label='HNSW', markersize=5, linewid
 plt.plot(ads[1][:], ads[0][:], marker='o', label='ADS', markersize=4, linewidth=width, color='firebrick', alpha=1)
 plt.plot(pca[1][:], pca[0][:],  marker='*', label='PCA', markersize=7, linewidth=width, color='indianred', alpha=0.9)
 plt.plot(lsh[1][:], lsh[0][:], marker='+', label='LSH', markersize=7, linewidth=width, color='olive')
-# plt.plot(pq[1], pq[0], marker='x', label='PQ', markersize=8, linewidth=width, color='darkgray')
-# plt.plot(opq[1][2:], opq[0][2:], marker='D', label='OPQ', markersize=3, linewidth=width, color='steelblue', alpha=0.9)
+# plt.plot(pq[1], pq[0], marker='x', label='PQ', markersize=4, linewidth=width, color='darkgray')
+plt.plot(opq[1][:], opq[0][:], marker='D', label='OPQ', markersize=3, linewidth=width, color='steelblue', alpha=0.9)
 
 
 # plt.xlim(0.1,1)
