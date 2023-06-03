@@ -8,15 +8,27 @@ source = './data/'
 datasets = ['gist']
 
 datasets_map = {
-    'imagenet': (6, 200),
-    'msong': (6, 1000),
-    'word2vec': (6, 1000),
-    'ukbench': (8, 200),
-    'deep': (8, 1000),
-    'gist': (8, 1000),
-    'glove1.2m': (8, 1000),
-    'sift': (8, 1000),
-    'tiny5m': (8, 1000),
+    # 'imagenet': (6, 200),
+    # 'msong': (6, 1000),
+    # 'word2vec': (6, 1000),
+    # 'ukbench': (8, 200),
+    # 'deep': (8, 1000),
+    # 'gist': (8, 1000),
+    # 'glove1.2m': (8, 1000),
+    # 'sift': (8, 1000),
+    # 'tiny5m': (8, 1000),
+    # 'uqv':(8,1000),
+    # 'glove-100':(4,1000),
+    # 'crawl': (6, 1000),
+    # 'enron': (8, 1000)
+    # 'mnist': (8, 1000),
+    # 'cifar': (8, 1000),
+    # 'sun':(8, 200),
+    # 'notre':(8, 200),
+    # 'nuswide':(4, 200),
+    'trevi': (8, 200)
+
+
 }
 
 def read_fvecs(filename, c_contiguous=True):
@@ -71,7 +83,7 @@ def calc_approx_dist(XP, XQ, RealDist):
 
 if __name__ == "__main__":
     
-    for dataset in datasets:
+    for dataset in datasets_map.keys():
         np.random.seed(int(time.time()))
         
         sampleQuery = datasets_map[dataset][1]
@@ -81,8 +93,6 @@ if __name__ == "__main__":
         # path
         path = os.path.join(source, dataset)
         data_path = os.path.join(path, f'{dataset}_base.fvecs')
-        query_path = os.path.join(path, f'{dataset}_query.fvecs')
-        dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
 
 
         # read data vectors
@@ -91,6 +101,8 @@ if __name__ == "__main__":
         D = X.shape[1]
         print(f"{dataset} of dimensionality {D} of cardinality {X.shape[0]}.")
         
+        # query_path = os.path.join(path, f'{dataset}_query.fvecs')
+        # dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
         # Q = read_fvecs(query_path)
         # print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
         # assert D == Q.shape[1]
@@ -101,7 +113,7 @@ if __name__ == "__main__":
 
         
         # generate random orthogonal matrix, store it and apply it
-        lowdim = 96
+        lowdim = 16
         print(f"LSH {dataset} of dimensionality {D}.")
         P = generate_matrix(lowdim, D)
         XP = np.dot(X, P.T)

@@ -148,7 +148,7 @@ namespace hnswlib {
         size_t label_offset_;
         DISTFUNC<dist_t> fstdistfunc_;
         void *dist_func_param_;
-        std::unordered_map<labeltype, tableint> label_lookup_;
+        std::unordered_map<labeltype, tableint> label_lookup_;  // external label -> internal id
 
         std::default_random_engine level_generator_;
         std::default_random_engine update_probability_generator_;
@@ -962,7 +962,7 @@ adsampling::tot_dimension+= lsh::D;
                     break;
                 }
                 candidate_set.pop();
-
+                
                 // Fetch the smallest object in S. 
                 tableint current_node_id = current_node_pair.second;
                 int *data = (int *) get_linklist0(current_node_id);
@@ -1268,8 +1268,9 @@ adsampling::tot_dimension+= adsampling::D;
                             char *currObj1 = (getDataByInternalId(candidate_id));
 #ifdef COUNT_DIST_TIME
                             StopW stopw = StopW();
-#endif                            
-                            int pos;
+
+#endif                           
+                            int pos;   
                             dist_t dist = svd::dist_comp2_pos(lowerBound, currObj1, data_point, pos);
 #ifdef COUNT_DIST_TIME
                             adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
@@ -1981,7 +1982,7 @@ adsampling::tot_dimension+= adsampling::D;
                             adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif    
 #ifdef COUNT_DIMENSION
-adsampling::tot_dimension+= lsh::D;
+adsampling::tot_dimension+= adsampling::D;
 #endif                                        
                             adsampling::tot_full_dist ++;
                             if (!has_deletions || !isMarkedDeleted(candidate_id))

@@ -8,6 +8,16 @@ data/sift*
 data/tiny5m*
 data/ukbench*
 data/word2vec*
+data/crawl*
+data/cifar*
+data/enron*
+data/glove-100*
+data/sun*
+data/mnist*
+data/notre*
+data/nuswide*
+data/trevi*
+data/uqv*
 results/
 src/index_hnsw
 src/search_hnsw
