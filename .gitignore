@@ -18,6 +18,8 @@ data/notre*
 data/nuswide*
 data/trevi*
 data/uqv*
+data/gauss*
+data/rand*
 *.pkl
 results/
 src/index_hnsw

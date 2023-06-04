@@ -13,7 +13,7 @@ datasets_map = {
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
     # 'deep': (8, 1000),
-    # 'gist': (8, 1000),
+    'gist': (8, 1000),
     # 'glove1.2m': (8, 1000),
     # 'sift': (8, 1000),
     # 'tiny5m': (8, 1000),
@@ -26,7 +26,7 @@ datasets_map = {
     # 'sun':(8, 200),
     # 'notre':(8, 200),
     # 'nuswide':(4, 200),
-    'trevi': (8, 200)
+    # 'trevi': (8, 200)
 
 
 }

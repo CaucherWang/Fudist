@@ -1,18 +1,15 @@
-'''
-generate ground truth nearest neighbors
-'''
-
+from sklearn.neighbors import NearestNeighbors
+from sklearn.manifold import LocallyLinearEmbedding
+import os
+import numpy as np
+import math
+import random
 import time
 import faiss
 import struct
 import os
 import numpy as np
 from multiprocessing.dummy import Pool as ThreadPool
-
-source = './data/'
-datasets = ['gauss', 'rand']
-
-
 
 def read_fvecs(filename, c_contiguous=True):
     fv = np.fromfile(filename, dtype=np.float32)
@@ -139,8 +136,8 @@ def compute_GT_CPU(xb, xq, gt_sl):
     
     return data_ids, data_dis
 
-def read_ivecs(filename, c_contiguous=True):
-    fv = np.fromfile(filename, dtype=np.int32)
+def read_fvecs(filename, c_contiguous=True):
+    fv = np.fromfile(filename, dtype=np.float32)
     if fv.size == 0:
         return np.zeros((0, 0))
     dim = fv.view(np.int32)[0]
@@ -153,33 +150,77 @@ def read_ivecs(filename, c_contiguous=True):
         fv = fv.copy()
     return fv
 
-if __name__ == '__main__':
-    for dataset in datasets:
-        for dim in [50, 100, 150, 200, 250, 300, 500, 750, 1000, 2000, 4000]:
-            # path
-            path = os.path.join(source, dataset)
-            data_path = os.path.join(path, f'{dataset}{dim}_base.fvecs')
-            query_path = os.path.join(path, f'{dataset}{dim}_query.fvecs')
+source = './data/'
+dataset = 'gauss'
+for dim in [1000, 2000, 4000]:
+    print('dim', dim)
+    path = os.path.join(source, dataset)
+    data_path = os.path.join(path, f'{dataset}{dim}_base.fvecs')
 
-            # read data vectors
-            print(f"Reading {dataset} from {data_path}.")
-            X = read_fvecs(data_path)
-            D = X.shape[1]
-            print(X.shape)
-            
-            # read data vectors
-            print(f"Reading {dataset} from {query_path}.")
-            Q = read_fvecs(query_path)
-            QD = Q.shape[1]
-            print(Q.shape)
-            
-            K = 100
-            
-            GT_I, GT_D = compute_GT_CPU(X, Q, K)
-            print(GT_I.shape)
-            
-            
-            
-            gt_path = os.path.join(path, f'{dataset}{dim}_groundtruth.ivecs')
-                        
-            to_ivecs(GT_I, gt_path)
+    X = read_fvecs(data_path)
+    X = np.unique(X, axis = 0)
+    print(X.shape)
+    X = X[:100000]
+    nnn = 100
+    gt_i, gt_d = compute_GT_CPU(X, X, nnn)
+    print('gt finished')
+
+    import pandas as pd
+    from geomle import mle
+    print(mle(pd.DataFrame(X), average = True, k2 = 99, dist = gt_d)[0])
+
+# import skdim
+# #generate data : np.array (n_points x n_dim). Here a uniformly sampled 5-ball embedded in 10 dimensions
+
+# #estimate local intrinsic dimension (dimension in k-nearest-neighborhoods around each point):
+# lpca = skdim.id.lPCA().fit_pw(X,
+#                               precomputed_knn = gt_i,
+#                               n_neighbors = nnn,
+#                               n_jobs = 32)
+                            
+# #get estimated intrinsic dimension
+# print(np.mean(lpca.dimension_pw_)) 
+
+
+
+
+# # Define the number of nearest neighbors to use
+# n_neighbors = 100
+
+# # Initialize the LLE object
+# lle = LocallyLinearEmbedding(n_neighbors=n_neighbors+1, n_components=2)
+
+# # Fit the LLE object to the data
+# lle.fit(X)
+
+# # Calculate the locally intrinsic dimensionality using the MLE method
+# lid = lle.inverse_transform(lle.transform(X)).sum(axis=1).mean()
+
+# print("The locally intrinsic dimensionality of the dataset is:", lid)
+
+# def l2_distance(a, b):
+#     """
+#     Compute the L2 distance between two vectors a and b.
+#     """
+#     return np.sum((a - b)**2)
+
+# def ComputeIntrinsicDimensionality(dataset, SampleQty = 1000000):
+#     dist = []
+#     DistMean = 0
+#     for n in range(SampleQty):
+#         r1 = random.randint(0, len(dataset))
+#         r2 = random.randint(0, len(dataset))      
+#         obj1 = dataset[r1]
+#         obj2 = dataset[r2]
+#         d = l2_distance(obj1, obj2)
+#         dist.append(d)
+#         DistMean += d
+#     DistMean /= float(SampleQty)
+#     DistSigma = 0
+#     for i in range(SampleQty):
+#         DistSigma += (dist[i] - DistMean) * (dist[i] - DistMean)
+#     DistSigma /= float(SampleQty)
+#     IntrDim = DistMean * DistMean / (2 * DistSigma)
+#     return IntrDim
+
+# print(ComputeIntrinsicDimensionality(X))

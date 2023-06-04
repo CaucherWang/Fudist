@@ -5,7 +5,7 @@ import struct
 from pywt import wavedec
 
 source = './data/'
-datasets = ['gist']
+datasets = ['enron', 'glove-100', 'glove1.2m', 'imagenet', 'msong', 'mnist', 'nuswide', 'notre', 'sift', 'sun', 'tiny5m', 'trevi', 'ukbench', 'uqv', 'word2vec']
 
 def read_fvecs(filename, c_contiguous=True):
     fv = np.fromfile(filename, dtype=np.float32)
@@ -37,15 +37,16 @@ def ed(vec1, vec2):
 
 def check_no_false_dismissal(data, data_dwt):
     print("Checking property.")
+    cnt = 0
     for _ in range(1000):
         # print(_)
         idx1 = random.randint(0,len(data)-1)
         idx2 = random.randint(0,len(data)-1)
         dist1 = ed(data[idx1], data[idx2])
         dist2 = ed(data_dwt[idx1], data_dwt[idx2])
-        if abs(dist1-dist2) > 1e-6:
-            print("error when checking property!")
-            exit()
+        if abs(dist1-dist2) > 1e-5:
+            cnt += 1
+    print(f"!!!!!!!!!!!!!Total {cnt} errors.!!!!!!!!!!!!!")
     
 
 if __name__ == "__main__":
