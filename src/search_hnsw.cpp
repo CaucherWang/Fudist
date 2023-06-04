@@ -174,7 +174,7 @@ static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, Hierarchi
     // vector<size_t> efs{2000, 2500, 3000, 3500, 4000, 4500, 5000};
     // vector<size_t> efs{3500, 4000};
     // vector<size_t> efs{3000, 5000, 8000};
-    vector<size_t> efs{50, 100, 150};
+    // vector<size_t> efs{50, 100, 150};
 
         // ProfilerStart("../prof/svd-profile.prof");
     for (size_t ef : efs) {
@@ -274,12 +274,12 @@ int main(int argc, char * argv[]) {
     string opq_rotation_path_str = base_path_str + "/" + data_str + "/OPQ_rotation_" + to_string(pq_m) + "_" + to_string(pq_ks)  + ".fvecs";
     string opq_codebook_path_str = base_path_str + "/" + data_str + "/OPQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
     string opq_codes_path_str = base_path_str + "/" + data_str + "/OPQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
-    string finger_projection_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_LSH_" + to_string(finger_lsh_dim) + ".fvecs";
-    string finger_b_dres_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_b_dres.fvecs";
-    string finger_sgn_dres_P_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_sgn_dres_P.ivecs";
-    string finger_c_2_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_c_2.fvecs";
-    string finger_c_P_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_c_P.fvecs";
-    string finger_start_idx_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_start_idx.ivecs";
+    string finger_projection_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str + "_LSH_" + to_string(finger_lsh_dim) + ".fvecs";
+    string finger_b_dres_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_b_dres.fvecs";
+    string finger_sgn_dres_P_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_sgn_dres_P.ivecs";
+    string finger_c_2_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_c_2.fvecs";
+    string finger_c_P_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_c_P.fvecs";
+    string finger_start_idx_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_start_idx.ivecs";
     
     char index_path[256];
     strcpy(index_path, index_path_str.c_str());
