@@ -21,17 +21,17 @@ namespace finger{
 
     vector<unsigned long long> binary_sgn_d_res_Ps;
 
-    float p1, p2, p3, p4, cos_theta, dis;
+    float p1, p2, p3, p4, cos_theta;
 
     float calc_humming_distance(const unsigned long long& b1, const unsigned long long& b2){
-        // unsigned long long cur = 1, x = b1 ^ b2;
-        // float ret = 0;
-        // for(int i = 0; i < lsh_dim; i++){
-        //     if(cur & x) ret += 1;
-        //     cur <<= 1;
-        // }
-        // return ret / lsh_dim;
-        return __builtin_popcountll(b1 ^ b2) / lsh_dim;
+        unsigned long long cur = 1, x = b1 ^ b2;
+        float ret = 0;
+        for(int i = 0; i < lsh_dim; i++){
+            if(cur & x) ret += 1;
+            cur <<= 1;
+        }
+        return ret / lsh_dim;
+        // return __builtin_popcountll(b1 ^ b2) / lsh_dim;
     }
 
     float dist_comp(const float& bsf, const float& t, const float& b, const float& c_2,
@@ -40,17 +40,19 @@ namespace finger{
         p1 = (t-b) * (t-b) * c_2;
         p2 = d_res * d_res;
         p3 = q_res_2;
+        assert(p1 >= 0);
+        assert(p2 >= 0);
+        assert(p3 >= 0);
         cos_theta = cos(calc_humming_distance(binary_sgn_q_res_P, binary_sgn_d_res_P) * M_PI);
         p4 = -2 * q_res * d_res * cos_theta;
 
-        dis = p1 + p2 + p3 + p4;
-
+        float dis = p1 + p2 + p3 + p4;
 #ifdef COUNT_DIMENSION            
 adsampling::tot_dimension += lsh_dim + 16;
 // adsampling::tot_comp_dim += i;
 #endif
 
-        return dis >= bsf ? dis : -dis;
+        return dis >= bsf ? -dis : dis;
     }
 
     unsigned long long get_binary_sgn_from_array(int * sgn_array){

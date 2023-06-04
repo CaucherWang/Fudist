@@ -1189,8 +1189,11 @@ adsampling::tot_dimension+= lsh::D;
             unsigned long long binary_sgn_d_res_P, binary_sgn_q_res_P;
             sign_q_res_P = new int[finger::lsh_dim];
             ///////////////////////
-
-            q_2 = fstdistfunc_(data_point, data_point, dist_func_param_);
+            q_2 = 0;
+            auto tmp = (float*)data_point;
+            for(int i = 0; i < finger::D; i++){
+                q_2 += tmp[i] * tmp[i];
+            }
 
             dist_t lowerBound;
             // Insert the entry point to the result and search set with its exact distance as a key. 
@@ -1331,6 +1334,14 @@ adsampling::tot_dimension+= finger::D;
                                         lowerBound = top_candidates.top().first;
                                 }
                             }
+#ifdef COUNT_FN
+                            else{
+                                dist_t real_dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_); 
+                                if(real_dist < lowerBound)
+                                    adsampling::tot_fn++;
+                            }
+#endif
+
                         }
                     }
                 }
