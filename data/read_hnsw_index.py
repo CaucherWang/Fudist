@@ -58,13 +58,13 @@ def get_neighbors_with_external_label(data_level_0, external_label, size_data_pe
     return get_neighbors_with_internal_id(data_level_0, internal_id, size_data_per_element)
 
 source = './data/'
-dataset = 'sun'
+dataset = 'gist'
 ef = 500
-M = 8
+M = 16
 
 if __name__ == '__main__':
     path = os.path.join(source, dataset)
-    index_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}.index')
+    index_path = os.path.join(path, f'DWT_{dataset}_ef{ef}_M{M}.index')
     
     data_path = os.path.join(path, f'{dataset}_base.fvecs')
     # read data vectors
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     X = read_fvecs(data_path)
 
     
-    index = read_hnsw_index(index_path, 512)
+    index = read_hnsw_index(index_path, 961)
     cnt = index.get_current_count()
     print(f"totally {cnt} items in index")
     capacity = index.get_max_elements()
@@ -99,9 +99,11 @@ if __name__ == '__main__':
     for i in range(10):
         vec = X[i]  # or vec = index.get_items(np.array([i]))[0]
         neighbors = get_neighbors_with_external_label(data_level_0, i, size_data_per_element, label2id)
+        print(len(neighbors))
         for neighbor in neighbors:
             label = id2label[neighbor]
             neighbor_vec = X[label]
+    
 
     print(index.get_max_elements())
     
