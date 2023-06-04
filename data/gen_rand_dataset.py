@@ -39,7 +39,8 @@ def to_floats(filename, data):
 
 
 def generate_matrix(lowdim, D):
-    return np.random.normal(size=(D, lowdim))
+    # generate random matrix from a unit sphere (-1,1) subject to uniform distribution
+    return np.random.uniform(-1, 1, size=(D, lowdim))
 
 
 def calc_approx_dist(XP, XQ, RealDist):
@@ -56,12 +57,12 @@ def calc_approx_dist(XP, XQ, RealDist):
     return result
 
 
-dataset = 'gauss'
+dataset = 'rand'
 query_num = 200
 if __name__ == "__main__":
     
     cardinality = 1000000
-    for dim in [1000, 2000, 4000]:
+    for dim in [50, 100, 150, 200, 250, 300, 500, 750, 1000, 2000, 4000]:
         np.random.seed(int(time.time()))
         X = generate_matrix(dim, cardinality)
         Q = generate_matrix(dim, query_num)

@@ -20,12 +20,12 @@ datasets_map = {
     # 'tiny5m': (8, 1000),
     # 'uqv':(8,1000),
     # 'glove-100':(4,1000),
-    # 'crawl': (6, 1000),
+    'crawl': (6, 1000),
     # 'mnist': (8, 1000),
     # 'cifar': (8, 1000),
     # 'sun':(8, 200),
     # 'notre':(8, 200),
-    'nuswide':(10, 200),
+    # 'nuswide':(10, 200),
     # 'trevi': (8, 200)
 }
 
@@ -124,9 +124,9 @@ if __name__ == "__main__":
         X = read_fvecs(data_path)
         D = X.shape[1]
         print(f"{dataset} of dimensionality {D} of cardinality {X.shape[0]}.")
-        # Q = read_fvecs(query_path)
-        # print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
-        # assert D == Q.shape[1]
+        Q = read_fvecs(query_path)
+        print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
+        assert D == Q.shape[1]
         
         # RealDist = read_fvecs(dist_path)
         # sampleQuery = RealDist.shape[0]
