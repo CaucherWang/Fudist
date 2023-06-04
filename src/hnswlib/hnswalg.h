@@ -3364,7 +3364,7 @@ adsampling::tot_dimension+= pq::D;
                             adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif
 #ifdef COUNT_DIMENSION
-                            if (adaptive == 91)
+                            if (adaptive == 10)
                                 adsampling::tot_dimension+= finger::D;
 #endif
                             adsampling::tot_full_dist ++;
@@ -3400,7 +3400,7 @@ adsampling::tot_dimension+= pq::D;
                 else if(adaptive == 61 || adaptive == 71) top_candidates=searchBaseLayerPQTMA<false,true>(currObj, query_data, std::max(ef_, k), k);
                 else if(adaptive == 62 || adaptive == 72) top_candidates=searchBaseLayerPQQEO<false,true>(currObj, query_data, std::max(ef_, k));
                 else if(adaptive == 9) top_candidates=searchBaseLayerDWT<false,true>(currObj, query_data, std::max(ef_, k));
-                else if(adaptive == 91) top_candidates=searchBaseLayerFINGER<false,true>(currObj, query_data, std::max(ef_, k));
+                else if(adaptive == 10) top_candidates=searchBaseLayerFINGER<false,true>(currObj, query_data, std::max(ef_, k));
                 else top_candidates=searchBaseLayerST<false,true>(currObj, query_data, std::max(ef_, k));
             }
 
