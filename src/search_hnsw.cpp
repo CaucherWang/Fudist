@@ -540,7 +540,7 @@ int main(int argc, char * argv[]) {
         // dwt::delta_d = svd_delta_d;
         memset(index_path, 0, sizeof(index_path));
         strcpy(index_path, dwt_index_path);
-    } else if(randomize == 91){ // finger
+    } else if(randomize == 10){ // finger
 
         finger::P = Matrix<float>(finger_projection_path);
         finger::bs_dres = Matrix<float>(finger_b_dres_path);

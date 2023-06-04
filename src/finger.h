@@ -24,13 +24,14 @@ namespace finger{
     float p1, p2, p3, p4, cos_theta, dis;
 
     float calc_humming_distance(const unsigned long long& b1, const unsigned long long& b2){
-        unsigned long long cur = 1, x = b1 ^ b2;
-        float ret = 0;
-        for(int i = 0; i < lsh_dim; i++){
-            if(cur & x) ret += 1;
-            cur <<= 1;
-        }
-        return ret / lsh_dim;
+        // unsigned long long cur = 1, x = b1 ^ b2;
+        // float ret = 0;
+        // for(int i = 0; i < lsh_dim; i++){
+        //     if(cur & x) ret += 1;
+        //     cur <<= 1;
+        // }
+        // return ret / lsh_dim;
+        return __builtin_popcountll(b1 ^ b2) / lsh_dim;
     }
 
     float dist_comp(const float& bsf, const float& t, const float& b, const float& c_2,
