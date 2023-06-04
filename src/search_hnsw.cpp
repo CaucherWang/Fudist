@@ -21,6 +21,7 @@
 #include "adsampling.h"
 #include "paa.h"
 #include "dwt.h"
+#include "finger.h"
 #include "svd.h"
 #include "lsh.h"
 #include "pq.h"
@@ -173,6 +174,8 @@ static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, Hierarchi
     // vector<size_t> efs{2000, 2500, 3000, 3500, 4000, 4500, 5000};
     // vector<size_t> efs{3500, 4000};
     // vector<size_t> efs{3000, 5000, 8000};
+    vector<size_t> efs{50, 100, 150};
+
         // ProfilerStart("../prof/svd-profile.prof");
     for (size_t ef : efs) {
         appr_alg.setEf(ef);
@@ -232,6 +235,7 @@ int main(int argc, char * argv[]) {
     float pq_epsilon = 0.9;
     float qeo_check_threshold = 0.95;
     int qeo_check_num = 2;
+    int finger_lsh_dim = 64;
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
@@ -270,6 +274,13 @@ int main(int argc, char * argv[]) {
     string opq_rotation_path_str = base_path_str + "/" + data_str + "/OPQ_rotation_" + to_string(pq_m) + "_" + to_string(pq_ks)  + ".fvecs";
     string opq_codebook_path_str = base_path_str + "/" + data_str + "/OPQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
     string opq_codes_path_str = base_path_str + "/" + data_str + "/OPQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
+    string finger_projection_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_LSH_" + to_string(finger_lsh_dim) + ".fvecs";
+    string finger_b_dres_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_b_dres.fvecs";
+    string finger_sgn_dres_P_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_sgn_dres_P.ivecs";
+    string finger_c_2_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_c_2.fvecs";
+    string finger_c_P_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_c_P.fvecs";
+    string finger_start_idx_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "_start_idx.ivecs";
+    
     char index_path[256];
     strcpy(index_path, index_path_str.c_str());
     char query_path[256] = "";
@@ -318,6 +329,18 @@ int main(int argc, char * argv[]) {
     strcpy(dwt_index_path, DWT_index_path_str.c_str());
     char dwt_query_path[256] = "";
     strcpy(dwt_query_path, dwt_query_path_str.c_str());
+    char finger_projection_path[256] = "";
+    strcpy(finger_projection_path, finger_projection_path_str.c_str());
+    char finger_b_dres_path[256] = "";
+    strcpy(finger_b_dres_path, finger_b_dres_path_str.c_str());
+    char finger_sgn_dres_P_path[256] = "";
+    strcpy(finger_sgn_dres_P_path, finger_sgn_dres_P_path_str.c_str());
+    char finger_c_2_path[256] = "";
+    strcpy(finger_c_2_path, finger_c_2_path_str.c_str());
+    char finger_c_P_path[256] = "";
+    strcpy(finger_c_P_path, finger_c_P_path_str.c_str());
+    char finger_start_idx_path[256] = "";
+    strcpy(finger_start_idx_path, finger_start_idx_path_str.c_str());
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:i:q:g:r:t:n:k:e:p:", longopts, &ind);
@@ -517,6 +540,28 @@ int main(int argc, char * argv[]) {
         // dwt::delta_d = svd_delta_d;
         memset(index_path, 0, sizeof(index_path));
         strcpy(index_path, dwt_index_path);
+    } else if(randomize == 91){ // finger
+
+        finger::P = Matrix<float>(finger_projection_path);
+        finger::bs_dres = Matrix<float>(finger_b_dres_path);
+        finger::c_2s = Matrix<float>(finger_c_2_path);
+        finger::c_Ps = Matrix<float>(finger_c_P_path);
+        finger::start_idxs = Matrix<int>(finger_start_idx_path);
+
+        Matrix<int> sgn_d_res_Ps = Matrix<int>(finger_sgn_dres_P_path);
+        unsigned int edge_num = sgn_d_res_Ps.n;
+        finger::binary_sgn_d_res_Ps = vector<unsigned long long>();
+        for(int i = 0; i < edge_num; i++){
+            finger::binary_sgn_d_res_Ps.push_back(
+                finger::get_binary_sgn_from_array(sgn_d_res_Ps[i])
+            );
+        }
+
+        StopW stopw = StopW();
+        finger::q_Ps = mul(Q, finger::P);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        finger::D = Q.d;
+        finger::lsh_dim = finger_lsh_dim;
     }
     
     L2Space l2space(Q.d);
