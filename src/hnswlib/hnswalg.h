@@ -1253,7 +1253,8 @@ adsampling::tot_dimension+= lsh::D;
 
                 t = (q_2 + c_2 - old_dist) / 2 / c_2;
                 q_res_2 = q_2 - t * t * c_2;
-                q_res = sqrt(q_res_2 < 0 ? 0 : q_res_2);
+                q_res_2  = q_res_2 < 0 ? 0 : q_res_2;
+                q_res = sqrt(q_res_2);
 
                 
                 // q_vec_P = come from vector
