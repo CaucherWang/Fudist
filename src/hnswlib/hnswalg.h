@@ -1261,7 +1261,7 @@ adsampling::tot_dimension+= lsh::D;
                 // q_res_P = q_vec_P - t * c_P
                 q_vec_P = finger::q_Ps[finger::q_label];
                 for(int tmpi = 0; tmpi < finger::lsh_dim; tmpi++){
-                    sign_q_res_P[tmpi] = q_vec_P[tmpi] - t * c_P[tmpi] > 0 ? 1: -1;
+                    sign_q_res_P[tmpi] = q_vec_P[tmpi] > t * c_P[tmpi] ? 1: -1;
                 }
 
                 binary_sgn_q_res_P = finger::get_binary_sgn_from_array(sign_q_res_P);

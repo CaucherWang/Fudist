@@ -72,8 +72,8 @@ def get_neighbors_with_external_label(data_level_0, external_label, size_data_pe
 source = './data'
 datasets_map = {
         'trevi':(16, 8, 64),
-            'mnist':(8, 8, 64),
-    'gist': (16, 8, 96),
+            # 'mnist':(8, 8, 64),
+    # 'gist': (16, 8, 96),
 
 
     # 'imagenet': (16,6, 16),
@@ -97,7 +97,7 @@ datasets_map = {
 ef = 500
 M = 16
 
-lsh_dim = 64
+lsh_dim = 16
 
 if __name__ == '__main__':
     for dataset in datasets_map.keys():
@@ -222,12 +222,12 @@ if __name__ == '__main__':
             cur_idx += num_nei
 
         # Stored in file
-        projection_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_LSH_{lsh_dim}.fvecs')
-        b_dres_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_b_dres.fvecs')
-        sgn_dres_P_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_sgn_dres_P.ivecs')
-        c_2_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_c_2.fvecs')
-        c_P_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_c_P.fvecs')
-        start_idx_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_start_idx.ivecs')
+        projection_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_LSH.fvecs')
+        b_dres_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_b_dres.fvecs')
+        sgn_dres_P_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_sgn_dres_P.ivecs')
+        c_2_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_c_2.fvecs')
+        c_P_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_c_P.fvecs')
+        start_idx_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_start_idx.ivecs')
 
         to_fvecs(projection_path, P)
         to_fvecs(b_dres_path, edge_info_float)

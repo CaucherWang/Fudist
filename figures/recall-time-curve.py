@@ -60,7 +60,7 @@ datsets_map = {
 }
 
 source = './results/'
-dataset = 'trevi'
+dataset = 'mnist'
 ef = 500
 M = datsets_map[dataset][0]
 pq_m = datsets_map[dataset][1]
