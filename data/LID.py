@@ -151,8 +151,8 @@ def read_fvecs(filename, c_contiguous=True):
     return fv
 
 source = './data/'
-dataset = 'gauss'
-for dim in [1000, 2000, 4000]:
+dataset = 'rand'
+for dim in [50, 100, 150, 200, 250, 300, 500, 750, 1000, 2000, 4000]:
     print('dim', dim)
     path = os.path.join(source, dataset)
     data_path = os.path.join(path, f'{dataset}{dim}_base.fvecs')

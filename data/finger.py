@@ -71,7 +71,7 @@ def get_neighbors_with_external_label(data_level_0, external_label, size_data_pe
 
 source = './data'
 datasets_map = {
-    'imagenet': (16,6, 16),
+    # 'imagenet': (16,6, 16),
     'msong': (8,6),
     'word2vec': (48, 6, 16),
     'ukbench': (16,8),

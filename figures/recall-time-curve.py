@@ -56,10 +56,11 @@ datsets_map = {
     'trevi':(16, 8, 64),
     'notre':(8, 8, 16),
     'nuswide':(48, 10, 64),
+    'enron':(16, ),
 }
 
 source = './results/'
-dataset = 'tiny5m'
+dataset = 'trevi'
 ef = 500
 M = datsets_map[dataset][0]
 pq_m = datsets_map[dataset][1]
@@ -72,7 +73,8 @@ lsh_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_LSH{lsh_lowdim}.log')
 pca_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_PCA.log')
 pq_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_PQ{pq_m}-{pq_ks}.log')
 opq_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_OPQ{pq_m}-{pq_ks}.log')
-# finger_path
+dwt_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_DWT.log')
+finger_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_FINGER.log')
 
 hnsw = resolve_log(hnsw_path)
 ads = resolve_log(ads_path)
@@ -80,6 +82,11 @@ lsh = resolve_log(lsh_path)
 pca = resolve_log(pca_path)
 # pq = resolve_log(pq_path)
 opq = resolve_log(opq_path)
+dwt = resolve_log(dwt_path)
+finger = resolve_log(finger_path)
+
+for i in range(len(dwt[0])):
+    dwt[1][i] = dwt[1][i] + 0.1
 
 k = 20
 width = 1.4
@@ -97,9 +104,9 @@ plt.plot(hnsw[1][:], hnsw[0][:], marker='d', label='HNSW', markersize=5, linewid
 plt.plot(ads[1][:], ads[0][:], marker='o', label='ADS', markersize=4, linewidth=width, color='firebrick', alpha=1)
 plt.plot(pca[1][:], pca[0][:],  marker='*', label='PCA', markersize=7, linewidth=width, color='indianred', alpha=0.9)
 plt.plot(lsh[1][:], lsh[0][:], marker='+', label='LSH', markersize=7, linewidth=width, color='olive')
-# plt.plot(pq[1], pq[0], marker='x', label='PQ', markersize=4, linewidth=width, color='darkgray')
+plt.plot(dwt[1], dwt[0], marker='x', label='DWT', markersize=4, linewidth=width, color='darkgray')
 plt.plot(opq[1][:], opq[0][:], marker='D', label='OPQ', markersize=3, linewidth=width, color='steelblue', alpha=0.9)
-
+plt.plot(finger[1][:], finger[0][:], marker='s', label='FINGER', markersize=3, linewidth=width, color='darkorange', alpha=0.9)
 
 # plt.xlim(0.1,1)
 # plt.ylim(1, 10000)
