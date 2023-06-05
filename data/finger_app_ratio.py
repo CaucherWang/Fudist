@@ -128,12 +128,12 @@ def get_neighbors_with_external_label(data_level_0, external_label, size_data_pe
 
 source = './data'
 datasets_map = {
-    'imagenet': (16,6, 16),
+    # 'imagenet': (16,6, 16),   
     # 'msong': (8,6),
     # 'word2vec': (48, 6, 16),
     # 'ukbench': (16,8),
     # 'deep': (16, 8, 16),
-    # 'gist': (16, 8, 96),
+    'gist': (16, 8, 96),
     # 'glove1.2m': (128, 8, 20),
     # 'sift': (16, 8, 16),
     # 'tiny5m': (48, 8, 16),
@@ -156,6 +156,7 @@ lsh_dim = 64
 
 if __name__ == '__main__':
     for dataset in datasets_map.keys():
+        M = datasets_map[dataset][0]
         path = os.path.join(source, dataset)
 
         projection_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_LSH_{lsh_dim}.fvecs')

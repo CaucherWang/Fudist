@@ -42,21 +42,23 @@ datsets_map = {
 
 ratios = {}
 source = './data/'
-dataset = 'trevi'
+dataset = 'gist'
 path = os.path.join(source, dataset)
 # paa_path = os.path.join(path, f'PAA_{datsets_map[dataset][2]}_approx_dist.floats')
-pq_path = os.path.join(path, f'PQ_{datsets_map[dataset][0]}_256_approx_dist.floats')
+# pq_path = os.path.join(path, f'PQ_{datsets_map[dataset][0]}_256_approx_dist.floats')
 opq_path = os.path.join(path, f'OPQ_{datsets_map[dataset][0]}_256_approx_dist.floats')
 lsh_path = os.path.join(path, f'LSH_64_approx_dist.floats')
 # svd_path = os.path.join(path, f'SVD_0.8_approx_dist.floats')
 ads_path = os.path.join(path, f'ADS_0.8_approx_dist.floats')
+finger_path = os.path.join(path, f'FINGER_approx_dist.floats')
 
 # ratios['PAA'] = list(read_floats(paa_path))
 # ratios['SVD-0.8'] = list(read_floats(svd_path))
-ratios['PQ'] = list(read_floats(pq_path))
+# ratios['PQ'] = list(read_floats(pq_path))
 ratios['OPQ'] = list(read_floats(opq_path))
 ratios['LSH'] = list(read_floats(lsh_path))
 ratios['ADS-0.8'] = list(read_floats(ads_path))
+ratios['finger'] = list(read_floats(finger_path))
 
 # get the quantile in probaQ of Chi-square distribution where the degree of freedom is DF
 def get_quantile(probaQ, DF):
