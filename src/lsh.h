@@ -8,7 +8,6 @@
 #include <iostream>
 #include "matrix.h"
 #include "utils.h"
-#include "space_l2.h"
 #include <boost/math/distributions/chi_squared.hpp>
 using namespace std;
 

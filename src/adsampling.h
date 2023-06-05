@@ -11,9 +11,10 @@ Note that in the whole algorithm we do not calculate the square root of the dist
 #include <queue>
 #include <vector>
 #include <iostream>
-#include "space_l2.h"
+#include "./hnswlib/space_l2.h"
 
 using namespace std;
+using namespace hnswlib;
 
 namespace adsampling{
 
@@ -22,13 +23,7 @@ namespace adsampling{
     L2Space* lowdimspace;
     hnswlib::DISTFUNC<float> fstdistfunc_;
     void *dist_func_param_;
-    
-    void initialize(unsigned dd){
-        delta_d = dd;
-        lowdimspace = new L2Space(delta_d);
-        fstdistfunc_ = lowdimspace->get_dist_func();
-        dist_func_param_ = lowdimspace->get_dist_func_param();
-    }
+
 
 
 unsigned int D = 960; // The dimensionality of the dataset. 
@@ -36,6 +31,14 @@ float epsilon0 = 2.1;  // epsilon0 - by default 2.1, recommended in [1.0,4.0], v
 unsigned int delta_d = 32; // dimension sampling for every delta_d dimensions.
 
 vector<float> ratios;   // 0 for 0, 1 for deltaD, 2 for 2 deltaD
+
+    
+    void initialize(unsigned dd){
+        delta_d = dd;
+        lowdimspace = new L2Space(delta_d);
+        fstdistfunc_ = lowdimspace->get_dist_func();
+        dist_func_param_ = lowdimspace->get_dist_func_param();
+    }
 
 long double distance_time = 0, approx_dist_time = 0;
 unsigned long long tot_dimension = 0;
