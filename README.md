@@ -5,8 +5,8 @@ We benchmark the performance of the following algorithms w.r.t. the distance app
 2. LSH-APG (LSH-pruning part)
 3. PQ
 4. OPQ
-5. SVD (idea from $\tau$-MNG)
-6. PAA
+5. PCA
+6. DWT
 
 And we benchmark and combine many heuristic idea and engineering optimizations from SOTA papers.
 After that, we propose Fudist, the best tool for distance approximation and pruning in ANN search.
@@ -20,7 +20,7 @@ After that, we propose Fudist, the best tool for distance approximation and prun
     
 
 ---
-## GIST Reproduction
+## Reproduction
 
 The tested datasets are available at https://www.cse.cuhk.edu.hk/systems/hash/gqr/datasets.html. 
 
@@ -28,17 +28,11 @@ The tested datasets are available at https://www.cse.cuhk.edu.hk/systems/hash/gq
 
 2. Index the datasets. It could take several hours. 
     ```sh
-    # Index IVF/IVF+/IVF++
-    ./script/index_ivf.sh
-
     # Index HNSW/HNSW+/HNSW++
     ./script/index_hnsw.sh
     ```
 3. Test the queries of the datasets. The results are generated in `./results/`. Detailed configurations can be found in `./script/README.md`.
     ```sh
-    # Index IVF/IVF+/IVF++
-    ./script/search_ivf.sh
-
     # Index HNSW/HNSW+/HNSW++
     ./script/search_hnsw.sh
     ```

@@ -164,8 +164,8 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000};
-    vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
+    vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000};
+    // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
     // vector<size_t> efs{6000, 7000, 8000, 9000, 10000};
@@ -262,7 +262,7 @@ int main(int argc, char * argv[]) {
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    string data_str = "trevi";   // dataset name
+    string data_str = "gist";   // dataset name
     string ef_str = "500"; // 3000 for uqv
     string M_str ="16"; // 8 for msong,mnist, 48 for nuswide
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
