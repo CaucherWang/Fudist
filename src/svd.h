@@ -18,6 +18,18 @@ namespace svd{
     unsigned int cur_query_label;
     float* amp_ratios; 
 
+        L2Space* lowdimspace;
+    hnswlib::DISTFUNC<float> fstdistfunc_;
+    void *dist_func_param_;
+
+    void initialize(unsigned dd){
+        delta_d = dd;
+        lowdimspace = new L2Space(delta_d);
+        fstdistfunc_ = lowdimspace->get_dist_func();
+        dist_func_param_ = lowdimspace->get_dist_func_param();
+    }
+
+
 
     float dist_comp_deltad(const float& bsf, unsigned label){
 
@@ -32,12 +44,15 @@ namespace svd{
             // It continues to sample additional delta_d dimensions. 
             int check = std::min(delta_d, D-i);
             i += check;
-            for(int j = 1;j<=check;j++){
-                float t = *d - *q;
-                d ++;
-                q ++;
-                dis += t * t;  
-            }
+            dis += fstdistfunc_(q, d, dist_func_param_);
+            d+= check;
+            q+= check;
+            // for(int j = 1;j<=check;j++){
+            //     float t = *d - *q;
+            //     d ++;
+            //     q ++;
+            //     dis += t * t;  
+            // }
             // Hypothesis tesing
             if(dis >= bsf){
                 break;

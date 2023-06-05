@@ -8,6 +8,7 @@
 #include <iostream>
 #include "matrix.h"
 #include "utils.h"
+#include "space_l2.h"
 #include <boost/math/distributions/chi_squared.hpp>
 using namespace std;
 
@@ -23,12 +24,20 @@ namespace lsh{
 
     unsigned int cur_query_label;
 
+    L2Space* lowdimspace;
+    hnswlib::DISTFUNC<float> fstdistfunc_;
+    void *dist_func_param_;
+
+
     void initialize(){
         // ipdistfunc_ = s->get_dist_func();
         // setHash();
 
 		boost::math::chi_squared chi(lowdim);
 		coeffq = 1.0 / boost::math::quantile(chi, probQ);
+        lowdimspace = new L2Space(lowdim);
+        fstdistfunc_ = lowdimspace->get_dist_func();
+        dist_func_param_ = lowdimspace->get_dist_func_param();
 	}
 
 
@@ -37,14 +46,15 @@ namespace lsh{
         float * q = queries_lsh.data + cur_query_label * lowdim;
         float* lsh_v = lsh_table.data + label * lowdim;
         float dis = 0;
-        float t;
+        dis  = fstdistfunc_(q, lsh_v, dist_func_param_);
+        // float t;
 
-        for(int i = 0; i < lowdim; ++i){
-            t = *q - *lsh_v;
-            q++;
-            lsh_v++;
-            dis += t * t;
-        }
+        // for(int i = 0; i < lowdim; ++i){
+        //     t = *q - *lsh_v;
+        //     q++;
+        //     lsh_v++;
+        //     dis += t * t;
+        // }
 
         dis *= coeffq;
 #ifdef COUNT_DIMENSION

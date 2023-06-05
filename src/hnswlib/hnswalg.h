@@ -1134,7 +1134,7 @@ adsampling::tot_dimension+= lsh::D;
                             StopW stopw = StopW();
 #endif                     
                             // dist_t dist = svd::dist_comp(lowerBound, getExternalLabel(candidate_id));
-                            dist_t dist = dwt::dist_comp(lowerBound, getDataByInternalId(candidate_id), data_point);
+                            dist_t dist = dwt::dist_comp_deltad(lowerBound, getDataByInternalId(candidate_id), data_point);
                             // cout << getExternalLabel(candidate_id) << endl;
 #ifdef COUNT_DIST_TIME
                             adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
@@ -3350,7 +3350,7 @@ adsampling::tot_dimension+= pq::D;
 #ifdef COUNT_DIST_TIME
                             StopW stopw = StopW();
 #endif
-                            dist_t d = dwt::dist_comp(curdist, getDataByInternalId(cand), query_data);
+                            dist_t d = dwt::dist_comp_deltad(curdist, getDataByInternalId(cand), query_data);
 #ifdef COUNT_DIST_TIME
                             adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif

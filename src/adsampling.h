@@ -11,13 +11,24 @@ Note that in the whole algorithm we do not calculate the square root of the dist
 #include <queue>
 #include <vector>
 #include <iostream>
+#include "space_l2.h"
 
 using namespace std;
 
 namespace adsampling{
 
         Matrix<float> project_table, queries_project;
-        unsigned int cur_query_label;       
+        unsigned int cur_query_label;   
+    L2Space* lowdimspace;
+    hnswlib::DISTFUNC<float> fstdistfunc_;
+    void *dist_func_param_;
+    
+    void initialize(unsigned dd){
+        delta_d = dd;
+        lowdimspace = new L2Space(delta_d);
+        fstdistfunc_ = lowdimspace->get_dist_func();
+        dist_func_param_ = lowdimspace->get_dist_func_param();
+    }
 
 
 unsigned int D = 960; // The dimensionality of the dataset. 
@@ -82,12 +93,15 @@ float dist_comp(const float& dis, const void *data, const void *query,
         // It continues to sample additional delta_d dimensions. 
         int check = std::min(delta_d, D-i);
         i += check;
-        for(int j = 1;j<=check;j++){
-            float t = *d - *q;
-            d ++;
-            q ++;
-            res += t * t;  
-        }
+        res += fstdistfunc_(q, d, dist_func_param_);
+        d += check;
+        q += check;
+        // for(int j = 1;j<=check;j++){
+        //     float t = *d - *q;
+        //     d ++;
+        //     q ++;
+        //     res += t * t;  
+        // }
         // Hypothesis tesing
         if(i<D && res >= dis * ratios[i / delta_d]){
 #ifdef COUNT_DIMENSION            

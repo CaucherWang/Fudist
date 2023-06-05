@@ -213,11 +213,12 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 7;
+    int randomize = 10;
     int subk=20;
     float ads_epsilon0 = 2.1;
-    float ads_delta_d = 16;
-    float pca_delta_d = 16;
+    int ads_delta_d = 16;
+    int pca_delta_d = 16;
+    int dwt_delta_d = 16;
     int paa_segment = 96;
     int lsh_dim = 64;
     double lsh_p_tau = 0.8;
@@ -261,9 +262,9 @@ int main(int argc, char * argv[]) {
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    string data_str = "mnist";   // dataset name
+    string data_str = "trevi";   // dataset name
     string ef_str = "500"; // 3000 for uqv
-    string M_str ="8"; // 8 for msong,mnist, 48 for nuswide
+    string M_str ="16"; // 8 for msong,mnist, 48 for nuswide
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
@@ -413,22 +414,23 @@ int main(int argc, char * argv[]) {
 #endif  
 
     cout << "result path: "<< result_path << endl;
+    int simd_lowdim = -1;
 
     // adsampling::D = Q.d;
     freopen(result_path,"a",stdout);
     cout << "k: "<<subk << endl;;
     if(randomize == 1 || randomize == 2){
         cout << setprecision(2) << ads_epsilon0 << " " << ads_delta_d;
-        if(randomize == 1) cout << " tight BSF";
+        if(randomize == 1) cout << " tight BSF ";
         cout << endl;
+        adsampling::initialize(ads_delta_d);
+        adsampling::D = Q.d;
+        adsampling::epsilon0 = ads_epsilon0;
+        adsampling::init_ratios();
         Matrix<float> P(transformation_path);
         StopW stopw = StopW();
         Q = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        adsampling::D = Q.d;
-        adsampling::epsilon0 = ads_epsilon0;
-        adsampling::delta_d = ads_delta_d;
-        adsampling::init_ratios();
         memset(index_path, 0, sizeof(index_path));
         strcpy(index_path, ads_index_path);
     }else if(randomize == 20){
@@ -482,16 +484,17 @@ int main(int argc, char * argv[]) {
         memset(index_path, 0, sizeof(index_path));
         strcpy(index_path, svd_index_path);
     } else if(randomize == 8 || randomize == 81){
+        svd::D = Q.d;
+        svd::delta_d = pca_delta_d;
+        svd::initialize(pca_delta_d);
         Matrix<float> P(pca_trans_path);
         cout << pca_delta_d << " ";
-        if(randomize == 1) cout << " tight BSF";
+        if(randomize == 81) cout << " tight BSF";
         cout << endl;
         // svd::svd_table = Matrix<float>(svd_path);
         StopW stopw = StopW();
         Q = mul(Q, P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        svd::D = Q.d;
-        svd::delta_d = pca_delta_d;
         memset(index_path, 0, sizeof(index_path));
         strcpy(index_path, pca_index_path);
         if(randomize == 81){
@@ -553,7 +556,11 @@ int main(int argc, char * argv[]) {
             cout << qeo_check_threshold << " " << qeo_check_num;
         }
         cout << endl;
-    } else if(randomize == 9){
+    } else if(randomize == 9){  // DWT
+        cout << pca_delta_d << " ";
+        if(randomize == 91) cout << " tight BSF";
+        cout << endl;
+        dwt::initialize(dwt_delta_d);
         StopW stopw = StopW();
         // TODO: dwt for query should be done in C++
         Q = Matrix<float>(dwt_query_path);
@@ -585,8 +592,7 @@ int main(int argc, char * argv[]) {
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
     }
     
-    L2Space l2space(Q.d);
-    
+    L2Space l2space(Q.d);   
     HierarchicalNSW<float> *appr_alg = new HierarchicalNSW<float>(&l2space, index_path, false);
     size_t k = G.d;
 
