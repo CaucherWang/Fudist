@@ -22,10 +22,20 @@ datasets_map = {
     # 'enron': (8, 1000),
     # 'mnist': (8, 1000),
     # 'cifar': (8, 200),
-    'sun':(8, 200),
-    'notre':(8, 200),
-    'nuswide':(4, 200),
-    'trevi': (8, 200)
+    # 'sun':(8, 200),
+    # 'notre':(8, 200),
+    # 'nuswide':(4, 200),
+    # 'trevi': (8, 200)
+    'gauss50':(),
+    'gauss100':(),
+    'gauss150':(),
+    'gauss200':(),
+    'gauss250':(),
+    'gauss300':(),
+    'gauss500':(),
+    'gauss1000':(),
+    'gauss2000':(),
+    'gauss4000':(),
 }
 
 def read_fvecs(filename, c_contiguous=True):

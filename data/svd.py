@@ -23,10 +23,21 @@ datasets_map = {
     # 'enron': (8, 1000),
     # 'mnist': (8, 1000),
     # 'cifar': (8, 1000),
-    'sun':(8, 200),
-    'notre':(8, 200),
-    'nuswide':(4, 200),
-    'trevi': (8, 200)
+    # 'sun':(8, 200),
+    # 'notre':(8, 200),
+    # 'nuswide':(4, 200),
+    # 'trevi': (8, 200),
+    'gauss50':(),
+    'gauss100':(),
+    'gauss150':(),
+    'gauss200':(),
+    'gauss250':(),
+    'gauss300':(),
+    'gauss500':(),
+    'gauss1000':(),
+    'gauss2000':(),
+    'gauss4000':(),
+
 }
 
 
@@ -135,7 +146,7 @@ if __name__ == "__main__":
         # XU = np.dot(X, U)
         
              
-        print(f"PCA {dataset} of dimensionality {D}.")
+        # print(f"PCA {dataset} of dimensionality {D}.")
         pca = PCA(n_components=D)
         pca.fit(X)
         s = pca.singular_values_
@@ -157,7 +168,7 @@ if __name__ == "__main__":
         # sampleBase = 10000
         # query_path = os.path.join(path, f'{dataset}_query.fvecs')
         # dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
-        # sample = 0.8
+        # sample = 0.5
         # U = read_fvecs(projection_path)
         # lowdim = int(U.shape[0] * sample)
         

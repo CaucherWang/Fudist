@@ -11,7 +11,7 @@ def resolve_log(file_path):
     with open(file_path, 'r') as f:
         lines = f.readlines()
         recall = []
-        time = []
+        dist = []
         for line in lines:
             line = line.strip()
             len_line = len(line)
@@ -20,12 +20,12 @@ def resolve_log(file_path):
                 continue
             if(len_line < 30):
                 recall.clear()
-                time.clear()
+                dist.clear()
                 continue
 
             recall.append(float(line[1]))
-            time.append(float(line[2]) / 1000.0)
-        return recall, time
+            dist.append(float(line[-1]) / 1000)
+        return [recall, dist]
     
 
 hnsw = {}
@@ -59,21 +59,21 @@ datsets_map = {
 }
 
 source = './results/'
-dataset = 'deep'
+dataset = 'gist'
 ef = 500
 M = datsets_map[dataset][0]
 pq_m = datsets_map[dataset][1]
 pq_ks = 256
 lsh_lowdim = datsets_map[dataset][2]
 path = os.path.join(source, dataset)
-hnsw_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_.log')
-ads_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_ADS.log')
-lsh_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_LSH{lsh_lowdim}.log')
-pca_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_PCA.log')
-pq_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_PQ{pq_m}-{pq_ks}.log')
-opq_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_OPQ{pq_m}-{pq_ks}.log')
-dwt_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_DWT.log')
-finger_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_FINGER.log')
+hnsw_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_.log')
+ads_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_ADS.log')
+lsh_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_LSH{lsh_lowdim}.log')
+pca_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_PCA.log')
+pq_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_PQ{pq_m}-{pq_ks}.log')
+opq_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_OPQ{pq_m}-{pq_ks}.log')
+dwt_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_DWT.log')
+finger_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_FINGER.log')
 
 hnsw = resolve_log(hnsw_path)
 ads = resolve_log(ads_path)
@@ -83,9 +83,17 @@ pca = resolve_log(pca_path)
 opq = resolve_log(opq_path)
 dwt = resolve_log(dwt_path)
 finger = resolve_log(finger_path)
+# copy pca[1] to hnsw[1]
+hnsw[1] = pca[1]
+methods = [ads, pca, lsh, opq, dwt, hnsw]
 
-for i in range(len(dwt[0])):
-    dwt[1][i] = dwt[1][i] + 0.1
+# fit a curve using hnsw[1] and hnsw[0]
+
+
+for method in methods:
+    for i in range(len(method[0])):
+        method[0][i] /= hnsw[0][i]
+
 
 k = 20
 width = 1.4
@@ -105,7 +113,7 @@ plt.plot(pca[1][:], pca[0][:],  marker='*', label='PCA', markersize=7, linewidth
 plt.plot(lsh[1][:], lsh[0][:], marker='+', label='LSH', markersize=7, linewidth=width, color='olive')
 plt.plot(dwt[1], dwt[0], marker='x', label='DWT', markersize=4, linewidth=width, color='darkgray')
 plt.plot(opq[1][:], opq[0][:], marker='D', label='OPQ', markersize=3, linewidth=width, color='steelblue', alpha=0.9)
-plt.plot(finger[1][:], finger[0][:], marker='s', label='FINGER', markersize=3, linewidth=width, color='darkorange', alpha=0.9)
+# plt.plot(finger[1][:], finger[0][:], marker='s', label='FINGER', markersize=3, linewidth=width, color='darkorange', alpha=0.9)
 
 # plt.xlim(0.1,1)
 # plt.ylim(1, 10000)
@@ -119,14 +127,14 @@ plt.yticks(fontsize=16)
 # plt.yticks([1e1,1e2,1e3,1e4],['$10^1$','$10^2$','$10^3$','$10^4$'],fontsize=18)
 
 # plt.legend(loc="best", fontsize=15)
-plt.ylabel(f"Recall{k}@{k} (%)", fontsize=16)
-plt.xlabel("Query time (ms)", fontsize=16)
+plt.ylabel(f"Relative accuracy", fontsize=16)
+plt.xlabel("# Distance comparison ($10^3$)", fontsize=16)
 # plt.title('rand-256-100m (100GB)', fontsize=20)
 plt.legend(loc='best', fontsize=16)  #显示图中左上角的标识区域
 # plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=6,mode="expand", borderaxespad=0.,fontsize=15.5)  #显示图中左上角的标识区域
 
 plt.tight_layout()
-plt.savefig(f'./figures/fig/ann-{dataset}.png',  format='png')
+plt.savefig(f'./figures/fig/acc-loss-{dataset}.png',  format='png')
 
 # plt.show()
 # plt.savefig('../figs/approx-node-full-%s-recall.png' % ds,  format='png')

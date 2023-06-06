@@ -41,11 +41,17 @@ datsets_map = {
 
 ratios = {}
 source = './data/'
-dataset = 'tiny5m'
+dataset = 'gist'
 path = os.path.join(source, dataset)
 for sample in [0.2, 0.4, 0.6, 0.8]:
-    ratios[f'ADS-{sample}'] = list(read_floats(os.path.join(path, f'ADS_{sample}_approx_dist.floats')))
     ratios[f'PCA-{sample}'] = list(read_floats(os.path.join(path, f'PCA_{sample}_approx_dist.floats')))
+
+for sample in [0.2, 0.4, 0.6, 0.8]:
+    ratios[f'DWT-{sample}'] = list(read_floats(os.path.join(path, f'DWT_{sample}_approx_dist.floats')))
+
+for sample in [0.2, 0.4, 0.6, 0.8]:
+    ratios[f'ADS-{sample}'] = list(read_floats(os.path.join(path, f'ADS_{sample}_approx_dist.floats')))
+
 
 
 # plot the shaded box plots on ratios, the x-axis is the method name, the y-axis is the ratio
@@ -53,7 +59,7 @@ plt.boxplot(ratios.values(), labels=ratios.keys(), showfliers=False, medianprops
 plt.ylabel("Approximation Ratio", fontsize=16)
 plt.tight_layout()
 
-plt.savefig(f'./figures/fig/app-ratio-ADS-PCA-{dataset}.png',  format='png')
+plt.savefig(f'./figures/fig/app-ratio-incremental-{dataset}.png',  format='png')
 # x = ['1k', '2.5k', '5k', '10k', '25k', '50k','100k']
 # x = [1000, 2500, 5000, 10000, 25000, 50000, 100000]
 # paris = [27.62, 70.9, 197.6, 503.37, 1208, 2442]

@@ -44,7 +44,7 @@ datsets_map = {
     'gist': (16, 8, 64),
     'glove1.2m': (128, 8, 20),
     'glove-100':(16, 4, 16),
-    'imagenet': (16,6, 16),
+    'imagenet': (16,6, 64),
     'mnist':(8, 8, 64),
     'msong': (8,6),
     'notre':(8, 8, 16),
@@ -59,21 +59,21 @@ datsets_map = {
 }
 
 source = './results/'
-dataset = 'deep'
+dataset = 'imagenet'
 ef = 500
 M = datsets_map[dataset][0]
 pq_m = datsets_map[dataset][1]
 pq_ks = 256
 lsh_lowdim = datsets_map[dataset][2]
 path = os.path.join(source, dataset)
-hnsw_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_.log')
-ads_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_ADS.log')
-lsh_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_LSH{lsh_lowdim}.log')
-pca_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_PCA.log')
-pq_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_PQ{pq_m}-{pq_ks}.log')
-opq_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_OPQ{pq_m}-{pq_ks}.log')
-dwt_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_DWT.log')
-finger_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_FINGER.log')
+hnsw_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_.log')
+ads_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_ADS.log')
+lsh_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_LSH{lsh_lowdim}.log')
+pca_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_PCA.log')
+pq_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_PQ{pq_m}-{pq_ks}.log')
+opq_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_OPQ{pq_m}-{pq_ks}.log')
+dwt_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_DWT.log')
+finger_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_FINGER.log')
 
 hnsw = resolve_log(hnsw_path)
 ads = resolve_log(ads_path)
@@ -84,8 +84,6 @@ opq = resolve_log(opq_path)
 dwt = resolve_log(dwt_path)
 finger = resolve_log(finger_path)
 
-for i in range(len(dwt[0])):
-    dwt[1][i] = dwt[1][i] + 0.1
 
 k = 20
 width = 1.4
@@ -126,7 +124,7 @@ plt.legend(loc='best', fontsize=16)  #显示图中左上角的标识区域
 # plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=6,mode="expand", borderaxespad=0.,fontsize=15.5)  #显示图中左上角的标识区域
 
 plt.tight_layout()
-plt.savefig(f'./figures/fig/ann-{dataset}.png',  format='png')
+plt.savefig(f'./figures/fig/simd-ann-{dataset}.png',  format='png')
 
 # plt.show()
 # plt.savefig('../figs/approx-node-full-%s-recall.png' % ds,  format='png')

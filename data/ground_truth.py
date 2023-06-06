@@ -10,7 +10,7 @@ import numpy as np
 from multiprocessing.dummy import Pool as ThreadPool
 
 source = './data/'
-datasets = ['gauss', 'rand']
+datasets = ['gist']
 
 
 
@@ -155,31 +155,31 @@ def read_ivecs(filename, c_contiguous=True):
 
 if __name__ == '__main__':
     for dataset in datasets:
-        for dim in [50, 100, 150, 200, 250, 300, 500, 750, 1000, 2000, 4000]:
+        # for dim in [50, 100, 150, 200, 250, 300, 500, 750, 1000, 2000, 4000]:
             # path
-            path = os.path.join(source, dataset)
-            data_path = os.path.join(path, f'{dataset}{dim}_base.fvecs')
-            query_path = os.path.join(path, f'{dataset}{dim}_query.fvecs')
+        path = os.path.join(source, dataset)
+        data_path = os.path.join(path, f'{dataset}_base.fvecs')
+        query_path = os.path.join(path, f'{dataset}_query.fvecs')
 
-            # read data vectors
-            print(f"Reading {dataset} from {data_path}.")
-            X = read_fvecs(data_path)
-            D = X.shape[1]
-            print(X.shape)
-            
-            # read data vectors
-            print(f"Reading {dataset} from {query_path}.")
-            Q = read_fvecs(query_path)
-            QD = Q.shape[1]
-            print(Q.shape)
-            
-            K = 100
-            
-            GT_I, GT_D = compute_GT_CPU(X, Q, K)
-            print(GT_I.shape)
-            
-            
-            
-            gt_path = os.path.join(path, f'{dataset}{dim}_groundtruth.ivecs')
-                        
-            to_ivecs(GT_I, gt_path)
+        # read data vectors
+        print(f"Reading {dataset} from {data_path}.")
+        X = read_fvecs(data_path)
+        D = X.shape[1]
+        print(X.shape)
+        
+        # read data vectors
+        print(f"Reading {dataset} from {query_path}.")
+        Q = read_fvecs(query_path)[:500]
+        QD = Q.shape[1]
+        print(Q.shape)
+        
+        K = 500
+        
+        GT_I, GT_D = compute_GT_CPU(X, Q, K)
+        print(GT_I.shape)
+        
+        
+        
+        gt_path = os.path.join(path, f'{dataset}500_groundtruth.ivecs')
+                    
+        to_ivecs(GT_I, gt_path)

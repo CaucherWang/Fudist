@@ -42,17 +42,21 @@ namespace svd{
 
         while(i < D){
             // It continues to sample additional delta_d dimensions. 
-            int check = std::min(delta_d, D-i);
-            i += check;
-            dis += fstdistfunc_(q, d, dist_func_param_);
-            d+= check;
-            q+= check;
-            // for(int j = 1;j<=check;j++){
-            //     float t = *d - *q;
-            //     d ++;
-            //     q ++;
-            //     dis += t * t;  
-            // }
+            if(delta_d  <= D-i){
+                dis += fstdistfunc_(q, d, dist_func_param_);
+                d += delta_d;
+                q += delta_d;
+                i += delta_d;
+            }else{
+                int check = D - i;
+                for(int j = 1;j<=check;j++){
+                    float t = *d - *q;
+                    d ++;
+                    q ++;
+                    dis += t * t;  
+                }
+                i += check;
+            } 
             // Hypothesis tesing
             if(dis >= bsf){
                 break;

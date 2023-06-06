@@ -1,13 +1,17 @@
 
 
-// #define USE_SIMD
+#define USE_SIMD
 
-#define EIGEN_DONT_PARALLELIZE
-#define EIGEN_DONT_VECTORIZE
-#define COUNT_DIMENSION
+
+// #define COUNT_DIMENSION
 // #define COUNT_FN
 // #define COUNT_DIST_TIME
 // #define ED2IP
+#define  SYNTHETIC
+#ifndef USE_SIMD
+#define EIGEN_DONT_PARALLELIZE
+#define EIGEN_DONT_VECTORIZE
+#endif
 
 
 #include <iostream>
@@ -164,16 +168,16 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000};
+    // vector<size_t> efs{100, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
     // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
+    // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500};
+    vector<size_t> efs{500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000};
     // vector<size_t> efs{6000, 7000, 8000, 9000, 10000};
-    // vector<size_t> efs{300, 400, 500, 600};
+    // vector<size_t> efs{200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{2000, 2500, 3000, 3500, 4000, 4500, 5000};
-    // vector<size_t> efs{3500, 4000};
-    // vector<size_t> efs{3000, 5000, 8000};
+    // vector<size_t> efs{6000, 8000, 10000};
+    // vector<size_t> efs{5000, 8000};
     // vector<size_t> efs{50, 100, 150};
 
         // ProfilerStart("../prof/svd-profile.prof");
@@ -213,22 +217,31 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 10;
-    int subk=20;
+    int randomize = 4;
+    string data_str = "gauss";   // dataset name
+    string M_str ="16"; // 8 for msong,mnist, 48 for nuswide
+#ifdef SYNTHETIC
+    string syn_dim  = "50";
+#endif
     float ads_epsilon0 = 2.1;
-    int ads_delta_d = 16;
-    int pca_delta_d = 16;
-    int dwt_delta_d = 16;
+    int ads_delta_d = 32;
+    int pca_delta_d = 32;
+    int dwt_delta_d = 32;
     int paa_segment = 96;
     int lsh_dim = 64;
-    double lsh_p_tau = 0.8;
-    int pq_m = 8;   // msong, imagenet,word2vec:6  nuswide:10
+    double lsh_p_tau = 0.9;
+    int pq_m = 6;   // glove-100:4, msong, imagenet,word2vec:6  nuswide:10
     int pq_ks = 256;
-    float pq_epsilon = 1.0;
+    float pq_epsilon = 1;
     float qeo_check_threshold = 0.95;
     int qeo_check_num = 2;
     int finger_lsh_dim = 64;
+    float finger_ratio = 1.5;
 
+    int subk=20;
+    string base_path_str = "../data";
+    string result_base_path_str = "../results";
+    string ef_str = "500"; // 3000 for uqv
     string exp_name = "";
     switch(randomize){
         case 0:
@@ -260,11 +273,6 @@ int main(int argc, char * argv[]) {
         
     }
 
-    string base_path_str = "../data";
-    string result_base_path_str = "../results";
-    string data_str = "gist";   // dataset name
-    string ef_str = "500"; // 3000 for uqv
-    string M_str ="16"; // 8 for msong,mnist, 48 for nuswide
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
@@ -297,12 +305,12 @@ int main(int argc, char * argv[]) {
     string opq_rotation_path_str = base_path_str + "/" + data_str + "/OPQ_rotation_" + to_string(pq_m) + "_" + to_string(pq_ks)  + ".fvecs";
     string opq_codebook_path_str = base_path_str + "/" + data_str + "/OPQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
     string opq_codes_path_str = base_path_str + "/" + data_str + "/OPQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
-    string finger_projection_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str + "_LSH_" + to_string(finger_lsh_dim) + ".fvecs";
-    string finger_b_dres_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_b_dres.fvecs";
-    string finger_sgn_dres_P_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_sgn_dres_P.ivecs";
-    string finger_c_2_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_c_2.fvecs";
-    string finger_c_P_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_c_P.fvecs";
-    string finger_start_idx_path_str = base_path_str + "/" + data_str + "/FINGER_" + data_str + "M" + M_str + "ef" + ef_str +"_start_idx.ivecs";
+    string finger_projection_path_str = base_path_str + "/" + data_str + "/FINGER" + to_string(finger_lsh_dim) +"_" + data_str + "M" + M_str + "ef" + ef_str + "_LSH.fvecs";
+    string finger_b_dres_path_str = base_path_str + "/" + data_str + "/FINGER" + to_string(finger_lsh_dim) +"_" + data_str + "M" + M_str + "ef" + ef_str +"_b_dres.fvecs";
+    string finger_sgn_dres_P_path_str = base_path_str + "/" + data_str + "/FINGER" + to_string(finger_lsh_dim) +"_" + data_str + "M" + M_str + "ef" + ef_str +"_sgn_dres_P.ivecs";
+    string finger_c_2_path_str = base_path_str + "/" + data_str + "/FINGER" + to_string(finger_lsh_dim) +"_" +  data_str + "M" + M_str + "ef" + ef_str +"_c_2.fvecs";
+    string finger_c_P_path_str = base_path_str + "/" + data_str + "/FINGER" + to_string(finger_lsh_dim) +"_" +  data_str + "M" + M_str + "ef" + ef_str +"_c_P.fvecs";
+    string finger_start_idx_path_str = base_path_str + "/" + data_str + "/FINGER" + to_string(finger_lsh_dim) +"_" +  data_str + "M" + M_str + "ef" + ef_str +"_start_idx.ivecs";
     
     char index_path[256];
     strcpy(index_path, index_path_str.c_str());
@@ -570,12 +578,15 @@ int main(int argc, char * argv[]) {
         memset(index_path, 0, sizeof(index_path));
         strcpy(index_path, dwt_index_path);
     } else if(randomize == 10){ // finger
-
+        cout << finger_ratio << " ";
+        if(randomize == 101) cout << " tight BSF";
+        cout << endl;
         finger::P = Matrix<float>(finger_projection_path);
         finger::bs_dres = Matrix<float>(finger_b_dres_path);
         finger::c_2s = Matrix<float>(finger_c_2_path);
         finger::c_Ps = Matrix<float>(finger_c_P_path);
         finger::start_idxs = Matrix<int>(finger_start_idx_path);
+        finger::ratio = finger_ratio;
         finger::D = Q.d;
         finger::lsh_dim = finger_lsh_dim;
         Matrix<int> sgn_d_res_Ps = Matrix<int>(finger_sgn_dres_P_path);
@@ -592,6 +603,7 @@ int main(int argc, char * argv[]) {
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
     }
     
+    Q.n = Q.n > 500 ? 500 : Q.n;
     L2Space l2space(Q.d);   
     HierarchicalNSW<float> *appr_alg = new HierarchicalNSW<float>(&l2space, index_path, false);
     size_t k = G.d;
