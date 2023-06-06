@@ -53,6 +53,7 @@ ads_path = os.path.join(path, f'ADS_0.5_approx_dist.floats')
 pca_path = os.path.join(path, f'PCA_0.5_approx_dist.floats')
 dwt_path = os.path.join(path, f'DWT_0.5_approx_dist.floats')
 finger_path = os.path.join(path, f'FINGER_approx_dist.floats')
+seanet_path = os.path.join(path, f'SEANet_16_approx_dist.floats')
 
 # ratios['PAA'] = list(read_floats(paa_path))
 # ratios['SVD-0.8'] = list(read_floats(svd_path))
@@ -63,6 +64,7 @@ ratios['ADS-0.5'] = list(read_floats(ads_path))
 ratios['LSH'] = list(read_floats(lsh_path))
 ratios['finger'] = list(read_floats(finger_path))
 ratios['OPQ'] = list(read_floats(opq_path))
+ratios['SEANet'] = list(read_floats(seanet_path))
 
 # get the quantile in probaQ of Chi-square distribution where the degree of freedom is DF
 def get_quantile(probaQ, DF):

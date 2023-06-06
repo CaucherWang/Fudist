@@ -21,6 +21,11 @@ namespace pq{
 
     unsigned int cur_query_label;
 
+    L2Space* lowdimspace;
+    hnswlib::DISTFUNC<float> fstdistfunc_;
+    void *dist_func_param_;
+
+
     static float
     L2sqr(const float *pVect1, const float *pVect2, size_t len);
 
@@ -37,6 +42,10 @@ namespace pq{
                 }
             }
         }
+        lowdimspace = new L2Space(sub_vec_len);
+        fstdistfunc_ = lowdimspace->get_dist_func();
+        dist_func_param_ = lowdimspace->get_dist_func_param();
+
     }
 
     void calc_dist_book(const Matrix<float>&Q){
@@ -49,8 +58,8 @@ namespace pq{
         for(unsigned i = 0; i < Q.n; i++){
             for(unsigned j = 0; j < M; j++){
                 for(unsigned k = 0; k < Ks; ++k){
-                    query_dist_book.data[i * M * Ks + j * Ks + k] = L2sqr(&Q.data[i * D + j * sub_vec_len], 
-                                &codebook.data[j * Ks * sub_vec_len + k * sub_vec_len], sub_vec_len);
+                    query_dist_book.data[i * M * Ks + j * Ks + k] = fstdistfunc_(&Q.data[i * D + j * sub_vec_len], 
+                                &codebook.data[j * Ks * sub_vec_len + k * sub_vec_len], dist_func_param_);
                 }
             }
         }
