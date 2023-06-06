@@ -606,6 +606,13 @@ adsampling::tot_dimension+= lsh::D;
                                         lowerBound = top_candidates.top().first;
                                 }
                             }
+#ifdef COUNT_FN
+                            else{
+                                dist_t real_dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_); 
+                                if(real_dist < lowerBound)
+                                    adsampling::tot_fn++;
+                            }
+#endif
                         }
                     }
                 }
@@ -1032,6 +1039,13 @@ adsampling::tot_dimension+= lsh::D;
                                         lowerBound = top_candidates.top().first;
                                 }
                             }
+                            #ifdef COUNT_FN
+                            else{
+                                dist_t real_dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_); 
+                                if(real_dist < lowerBound)
+                                    adsampling::tot_fn++;
+                            }
+#endif
                         }
                     }
                 }
@@ -1158,6 +1172,13 @@ adsampling::tot_dimension+= lsh::D;
                                         lowerBound = top_candidates.top().first;
                                 }
                             }
+                            #ifdef COUNT_FN
+                            else{
+                                dist_t real_dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_); 
+                                if(real_dist < lowerBound)
+                                    adsampling::tot_fn++;
+                            }
+#endif
                         }
                     }
                 }
@@ -2213,6 +2234,13 @@ adsampling::tot_dimension+= adsampling::D;
                                         lowerBound = top_candidates.top().first;
                                 }
                             }
+                            #ifdef COUNT_FN
+                            else{
+                                dist_t real_dist = fstdistfunc_(data_point, getDataByInternalId(candidate_id), dist_func_param_); 
+                                if(real_dist < lowerBound)
+                                    adsampling::tot_fn++;
+                            }
+#endif
                         }
                     }
                 }

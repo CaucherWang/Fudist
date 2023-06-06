@@ -2,6 +2,7 @@ import os
 import numpy as np
 import struct
 import time
+from numba import njit
 
 source = './data/'
 # datasets = ['deep', 'gist', 'glove1.2m', 'msong', 'sift', 'tiny5m', 'ukbench', 'word2vec']
@@ -80,6 +81,13 @@ def calc_approx_dist(XP, XQ, RealDist):
                 result.append(dist / RealDist[i][j])
     return result
 
+@njit
+def calc_stdev(X):
+    '''
+    return: an array of standard deviation of each column of X
+    '''
+    return np.std(X, axis=0)
+
 
 if __name__ == "__main__":
     
@@ -94,6 +102,11 @@ if __name__ == "__main__":
         X = read_fvecs(data_path)
         D = X.shape[1]
         print(f"{dataset} of dimensionality {D} of cardinality {X.shape[0]}.")
+        
+        stds = calc_stdev(X)
+        print(sorted(stds))
+        print(np.std(stds))
+        
         
 
         

@@ -8,12 +8,12 @@ from numba import njit
 
 source = './data/'
 datasets_map = {
-    'imagenet': (6, 200),
+    # 'imagenet': (6, 200),
     # 'msong': (6, 1000),
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
     # 'deep': (4, 1000),
-    # 'gist': (8, 1000),
+    'gist': (8, 1000),
     # 'glove1.2m': (8, 1000),
     # 'sift': (8, 1000),
     # 'tiny5m': (8, 1000),
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         query_dwt = query_dwt[:sampleQuery, ~zero_columns]
         data_dwt = data_dwt[:sampleBase, ~zero_columns]
         
-        for p in [0.2, 0.4, 0.6, 0.8, 1]:
+        for p in [0.2, 0.4, 0.6, 0.8]:
             result = calc_approx_dist(data_dwt, query_dwt, RealDist, p)
             result_path = os.path.join(path, f'DWT_{p}_approx_dist.floats')
             print(f'proportion of dim: {p} -> average ratio: {np.mean(result)}')

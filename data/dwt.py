@@ -6,7 +6,7 @@ from pywt import wavedec
 
 source = './data/'
 datasets = ['enron', 'glove-100', 'glove1.2m', 'imagenet', 'msong', 'mnist', 'nuswide', 'notre', 'sift', 'sun', 'tiny5m', 'trevi', 'ukbench', 'uqv', 'word2vec']
-
+datasets  = ['mnist']
 def read_fvecs(filename, c_contiguous=True):
     fv = np.fromfile(filename, dtype=np.float32)
     if fv.size == 0:

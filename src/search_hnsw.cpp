@@ -1,13 +1,17 @@
 
 
-// #define USE_SIMD
+#define USE_SIMD
 
-#define EIGEN_DONT_PARALLELIZE
-#define EIGEN_DONT_VECTORIZE
+
 #define COUNT_DIMENSION
 // #define COUNT_FN
 // #define COUNT_DIST_TIME
 // #define ED2IP
+
+#ifdef USE_SIMD
+#define EIGEN_DONT_PARALLELIZE
+#define EIGEN_DONT_VECTORIZE
+#endif
 
 
 #include <iostream>
@@ -164,16 +168,16 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000};
+    vector<size_t> efs{100, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
     // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
+    // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500};
+    // vector<size_t> efs{500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000};
     // vector<size_t> efs{6000, 7000, 8000, 9000, 10000};
-    vector<size_t> efs{200, 250, 300, 400, 500, 600};
+    // vector<size_t> efs{200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{2000, 2500, 3000, 3500, 4000, 4500, 5000};
-    // vector<size_t> efs{3500, 4000};
-    // vector<size_t> efs{3000, 5000, 8000};
+    // vector<size_t> efs{6000, 8000, 10000};
+    // vector<size_t> efs{5000, 8000};
     // vector<size_t> efs{50, 100, 150};
 
         // ProfilerStart("../prof/svd-profile.prof");
@@ -213,9 +217,9 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 9;
-    string data_str = "mnist";   // dataset name
-    string M_str ="8"; // 8 for msong,mnist, 48 for nuswide
+    int randomize = 0;
+    string data_str = "gist";   // dataset name
+    string M_str ="16"; // 8 for msong,mnist, 48 for nuswide
 
     float ads_epsilon0 = 2.1;
     int ads_delta_d = 16;
@@ -223,14 +227,14 @@ int main(int argc, char * argv[]) {
     int dwt_delta_d = 16;
     int paa_segment = 96;
     int lsh_dim = 64;
-    double lsh_p_tau = 0.8;
-    int pq_m = 8;   // msong, imagenet,word2vec:6  nuswide:10
+    double lsh_p_tau = 0.95;
+    int pq_m = 8;   // glove-100:4, msong, imagenet,word2vec:6  nuswide:10
     int pq_ks = 256;
-    float pq_epsilon = 1.0;
+    float pq_epsilon = 1;
     float qeo_check_threshold = 0.95;
     int qeo_check_num = 2;
     int finger_lsh_dim = 64;
-    float finger_ratio = 1.8;
+    float finger_ratio = 1;
 
     int subk=20;
     string base_path_str = "../data";
@@ -281,7 +285,7 @@ int main(int argc, char * argv[]) {
     result_prefix_str += "IP_";
     #endif
     string result_path_str = result_base_path_str + "/" + data_str + "/" + result_prefix_str + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log";
-    string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs";
+    string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "500_groundtruth.ivecs";
     string trans_path_str = base_path_str + "/" + data_str + "/O.fvecs";
     string transed_data_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_base.fvecs";
     string lsh_trans_path_str = base_path_str + "/" + data_str + "/LSH" + to_string(lsh_dim) + ".fvecs";
@@ -597,6 +601,7 @@ int main(int argc, char * argv[]) {
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
     }
     
+    Q.n = Q.n > 500 ? 500 : Q.n;
     L2Space l2space(Q.d);   
     HierarchicalNSW<float> *appr_alg = new HierarchicalNSW<float>(&l2space, index_path, false);
     size_t k = G.d;

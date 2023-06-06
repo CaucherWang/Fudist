@@ -2,8 +2,8 @@
 cd ..
 
 efConstruction=500
-M=48
-data='tiny5m'
+M=8
+data='mnist'
 
 g++ -o ./src/index_hnsw ./src/index_hnsw.cpp -I ./src/ -O3 -mavx2 -fopenmp
 
