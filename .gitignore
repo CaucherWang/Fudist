@@ -19,6 +19,7 @@ data/nuswide*
 data/trevi*
 data/uqv*
 data/gauss*
+data/SEANet_*
 data/rand*
 *.pkl
 results/

@@ -10,10 +10,10 @@ datasets = ['gist']
 datasets_map = {
     'imagenet': (6, 200),
     # 'msong': (6, 1000),
-    # 'word2vec': (6, 1000),
+    'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
-    # 'gist': (8, 1000),
-    # 'deep': (8, 1000),
+    'gist': (8, 1000),
+    'deep': (8, 1000),
     # 'glove1.2m': (8, 1000),
     # 'sift': (8, 1000),
     # 'tiny5m': (8, 1000),
@@ -21,12 +21,12 @@ datasets_map = {
     # 'glove-100':(4,1000),
     # 'crawl': (6, 1000),
     # 'enron': (8, 1000),
-    # 'mnist': (8, 1000),
+    'mnist': (8, 1000),
     # 'cifar': (8, 1000),
     # 'sun':(8, 200),
     # 'notre':(8, 200),
     # 'nuswide':(4, 200),
-    # 'trevi': (8, 200),
+    'trevi': (8, 200),
     # 'gauss50':(),
     # 'gauss100':(),
     # 'gauss150':(),
@@ -147,11 +147,25 @@ if __name__ == "__main__":
         
              
         # print(f"PCA {dataset} of dimensionality {D}.")
-        # pca = PCA(n_components=D)
-        # pca.fit(X)
-        # s = pca.singular_values_
-        # U = pca.components_
-        # print(s)
+        pca = PCA(n_components=D)
+        pca.fit(X)
+        s = np.array(pca.singular_values_)
+        len = np.linalg.norm(s)
+        s = s / len
+        # normalize the array s
+        print(np.linalg.norm(s))
+        
+        print(s)
+        
+        # plot the distribution of s
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(5.5, 3.2))
+        plt.plot(s)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
+        plt.ylabel('Singular values',fontsize=14)
+        plt.tight_layout()
+        plt.savefig(f'./figures/fig/{dataset}_singular_values.png',  format='png')
         
         # U = U.T
         # # print(check_orthogonal_matrix(U))
@@ -159,28 +173,28 @@ if __name__ == "__main__":
         # XU = np.dot(X, U)
 
 
-        projection_path = os.path.join(path, 'PCA.fvecs')
-        transformed_path = os.path.join(path, f'PCA_{dataset}_base.fvecs')
+        # projection_path = os.path.join(path, 'PCA.fvecs')
+        # transformed_path = os.path.join(path, f'PCA_{dataset}_base.fvecs')
         # to_fvecs(projection_path, U)
         # to_fvecs(transformed_path, XU)
         
 
-        sampleQuery = datasets_map[dataset][1]
-        sampleBase = 10000
-        query_path = os.path.join(path, f'{dataset}_query.fvecs')
-        dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
-        sample = 0.8
-        U = read_fvecs(projection_path)
-        lowdim = int(U.shape[0] * sample)
+        # sampleQuery = datasets_map[dataset][1]
+        # sampleBase = 10000
+        # query_path = os.path.join(path, f'{dataset}_query.fvecs')
+        # dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
+        # sample = 0.5
+        # U = read_fvecs(projection_path)
+        # lowdim = int(U.shape[0] * sample)
         
-        X = read_fvecs(transformed_path)[:sampleBase, :lowdim]
-        Q = read_fvecs(query_path)[:sampleQuery]
-        Q = np.dot(Q, U)[ : , :lowdim]
-        RealDist = read_fvecs(dist_path)
-        result = calc_approx_dist(X, Q, RealDist)
-        result = np.array(result)
-        result = np.sort(result)
-        result_path = os.path.join(path, f'PCA_{sample}_approx_dist.floats')
-        to_floats(result_path, result)
+        # X = read_fvecs(transformed_path)[:sampleBase, :lowdim]
+        # Q = read_fvecs(query_path)[:sampleQuery]
+        # Q = np.dot(Q, U)[ : , :lowdim]
+        # RealDist = read_fvecs(dist_path)
+        # result = calc_approx_dist(X, Q, RealDist)
+        # result = np.array(result)
+        # result = np.sort(result)
+        # result_path = os.path.join(path, f'PCA_{sample}_approx_dist.floats')
+        # to_floats(result_path, result)
         
         
