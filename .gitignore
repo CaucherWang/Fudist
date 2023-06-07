@@ -21,6 +21,7 @@ data/uqv*
 data/gauss*
 data/SEANet_*
 data/rand*
+data/SEANet_data
 *.pkl
 results/
 src/index_hnsw
