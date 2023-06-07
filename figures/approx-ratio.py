@@ -17,16 +17,16 @@ def read_floats(filename, c_contiguous=True):
 
 
 datsets_map = {
-    # 'imagenet': (6, 200),
+    'imagenet': (6, 200),
     # 'msong': (6, 1000),
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
-    'deep': (8, 1000, 16),
-    'gist': (8, 1000, 64),
-    'glove1.2m': (8, 1000, 20),
-    'sift': (8, 1000, 16),
+    # 'deep': (8, 1000, 16),
+    # 'gist': (8, 1000, 64),
+    # 'glove1.2m': (8, 1000, 20),
+    # 'sift': (8, 1000, 16),
     # 'tiny5m': (8, 1000),
-    'trevi': (8, 200)
+    # 'trevi': (8, 200)
 }
 
 # for dataset in datsets_map:
@@ -42,12 +42,12 @@ datsets_map = {
 
 ratios = {}
 source = './data/'
-dataset = 'gist'
+dataset = 'imagenet'
 path = os.path.join(source, dataset)
 # paa_path = os.path.join(path, f'PAA_{datsets_map[dataset][2]}_approx_dist.floats')
 # pq_path = os.path.join(path, f'PQ_{datsets_map[dataset][0]}_256_approx_dist.floats')
 opq_path = os.path.join(path, f'OPQ_{datsets_map[dataset][0]}_256_approx_dist.floats')
-lsh_path = os.path.join(path, f'LSH_64_approx_dist.floats')
+# lsh_path = os.path.join(path, f'LSH_64_approx_dist.floats')
 # svd_path = os.path.join(path, f'SVD_0.8_approx_dist.floats')
 ads_path = os.path.join(path, f'ADS_0.5_approx_dist.floats')
 pca_path = os.path.join(path, f'PCA_0.5_approx_dist.floats')
@@ -59,12 +59,12 @@ seanet_path = os.path.join(path, f'SEANet_16_approx_dist.floats')
 # ratios['SVD-0.8'] = list(read_floats(svd_path))
 # ratios['PQ'] = list(read_floats(pq_path))
 ratios['PCA-0.5'] = list(read_floats(pca_path))
-ratios['DWT-0.5'] = list(read_floats(dwt_path))
-ratios['ADS-0.5'] = list(read_floats(ads_path))
-ratios['LSH'] = list(read_floats(lsh_path))
-ratios['finger'] = list(read_floats(finger_path))
+# ratios['DWT-0.5'] = list(read_floats(dwt_path))
+# ratios['ADS-0.5'] = list(read_floats(ads_path))
+# ratios['LSH'] = list(read_floats(lsh_path))
+# ratios['finger'] = list(read_floats(finger_path))
 ratios['OPQ'] = list(read_floats(opq_path))
-ratios['SEANet'] = list(read_floats(seanet_path))
+# ratios['SEANet'] = list(read_floats(seanet_path))
 
 # get the quantile in probaQ of Chi-square distribution where the degree of freedom is DF
 def get_quantile(probaQ, DF):
@@ -72,8 +72,8 @@ def get_quantile(probaQ, DF):
     return chi2.ppf(probaQ, DF)
 
 
-coeffq = 1.0 / get_quantile(0.95, 64)
-ratios['LSH'] = [coeffq * r for r in ratios['LSH']]
+# coeffq = 1.0 / get_quantile(0.95, 64)
+# ratios['LSH'] = [coeffq * r for r in ratios['LSH']]
 # ratios['OPQ'] = [1.25 * r for r in ratios['LSH']]
 # plot the shaded box plots on ratios, the x-axis is the method name, the y-axis is the ratio
 plt.boxplot(ratios.values(), labels=ratios.keys(), showfliers=False, medianprops={'color':'blue', 'linewidth':2}, boxprops={'color':'black', 'linewidth':2}, whiskerprops={'color':'black', 'linewidth':2}, capprops={'color':'black', 'linewidth':2})

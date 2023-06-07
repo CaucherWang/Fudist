@@ -9,11 +9,11 @@ source = './data/'
 datasets = ['imagenet']
 
 datasets_map = {
-    # 'imagenet': (6, 200),
+    'imagenet': (6, 200),
     # 'msong': (6, 1000),
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
-    'deep': (4, 1000),
+    # 'deep': (4, 1000),
     # 'gist': (8, 1000),
     # 'glove1.2m': (8, 1000),
     # 'sift': (8, 1000),
@@ -128,9 +128,9 @@ if __name__ == "__main__":
         print(f"{query_path} of dimensionality {D} of cardinality {Q.shape[0]}.")
         assert D == Q.shape[1]
         
-        # RealDist = read_fvecs(dist_path)
-        # sampleQuery = RealDist.shape[0]
-        # sampleBase = RealDist.shape[1]
+        RealDist = read_fvecs(dist_path)
+        sampleQuery = RealDist.shape[0]
+        sampleBase = RealDist.shape[1]
         
         
         pq = nanopq.OPQ(M=M, Ks=Ks, verbose=True)
@@ -139,24 +139,24 @@ if __name__ == "__main__":
         print(X_code.shape)
 
 
-        # X_code = pq.encode(vecs=X[:sampleBase])
-        # result = calc_approx_dist(Q[:sampleQuery], X_code, pq, RealDist)
-        # print(len(result))
-        # # sort the result asc
-        # result = np.array(result)
-        # result = np.sort(result)
-        # # 90% percent of result
-        # print("80% percentage point: ", result[int(len(result) * 0.8)])
+        X_code = pq.encode(vecs=X[:sampleBase])
+        result = calc_approx_dist(Q[:sampleQuery], X_code, pq, RealDist)
+        print(len(result))
+        # sort the result asc
+        result = np.array(result)
+        result = np.sort(result)
+        # 90% percent of result
+        print("80% percentage point: ", result[int(len(result) * 0.8)])
         
-        # result_path = os.path.join(path, f'OPQ_{M}_{Ks}_approx_dist.floats')
-        # to_floats(result_path, result)
+        result_path = os.path.join(path, f'OPQ_{M}_{Ks}_approx_dist.floats')
+        to_floats(result_path, result)
 
 
-        projection_path = os.path.join(path, f'OPQ_codebook_{M}_{Ks}.fdat')
-        rotation_path = os.path.join(path, f'OPQ_rotation_{M}_{Ks}.fvecs')
-        transformed_path = os.path.join(path, f'OPQ_{M}_{Ks}_{dataset}_base.ivecs')
+        # projection_path = os.path.join(path, f'OPQ_codebook_{M}_{Ks}.fdat')
+        # rotation_path = os.path.join(path, f'OPQ_rotation_{M}_{Ks}.fvecs')
+        # transformed_path = os.path.join(path, f'OPQ_{M}_{Ks}_{dataset}_base.ivecs')
 
 
-        to_fdat(projection_path, pq.codewords)
-        to_fvecs(rotation_path, pq.R)
-        to_ivecs(transformed_path, X_code)
+        # to_fdat(projection_path, pq.codewords)
+        # to_fvecs(rotation_path, pq.R)
+        # to_ivecs(transformed_path, X_code)

@@ -1,6 +1,6 @@
 
 
-#define USE_SIMD
+// #define USE_SIMD
 
 
 #define COUNT_DIMENSION
@@ -170,7 +170,7 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    // vector<size_t> efs{100, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
+    vector<size_t> efs{100, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
     // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500};
     // vector<size_t> efs{500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000};
@@ -219,9 +219,9 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 11;
-    string data_str = "imagenet";   // dataset name
-    string M_str ="16"; // 8 for msong,mnist, 48 for nuswide
+    int randomize = 7;
+    string data_str = "glove1.2m";   // dataset name
+    string M_str ="128"; // 8 for msong,mnist, 48 for nuswide
 #ifdef SYNTHETIC
     string syn_dim  = "50";
 #endif
@@ -232,7 +232,7 @@ int main(int argc, char * argv[]) {
     int paa_segment = 96;
     int lsh_dim = 64;
     double lsh_p_tau = 0.9;
-    int pq_m = 6;   // glove-100:4, msong, imagenet,word2vec:6  nuswide:10
+    int pq_m = 8;   // glove-100:4, msong, imagenet,word2vec:6  nuswide:10
     int pq_ks = 256;
     float pq_epsilon = 1;
     float qeo_check_threshold = 0.95;
