@@ -3,9 +3,9 @@
 #define USE_SIMD
 
 
-// #define COUNT_DIMENSION
+#define COUNT_DIMENSION
 // #define COUNT_FN
-// #define COUNT_DIST_TIME
+#define COUNT_DIST_TIME
 // #define ED2IP
 #define  SYNTHETIC
 #ifndef USE_SIMD
@@ -26,6 +26,7 @@
 #include "paa.h"
 #include "dwt.h"
 #include "finger.h"
+#include "seanet.h"
 #include "svd.h"
 #include "lsh.h"
 #include "pq.h"
@@ -109,6 +110,7 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
             adsampling::cur_query_label = i;
             svd::cur_query_label = i;
             pq::cur_query_label = i;
+            seanet::cur_query_label = i;
 #ifdef ED2IP
     hnswlib::cur_query_vec_len = hnswlib::query_vec_len[i];
 #endif
@@ -171,9 +173,9 @@ static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, Hierarchi
     // vector<size_t> efs{100, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
     // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500};
-    vector<size_t> efs{500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000};
+    // vector<size_t> efs{500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000};
     // vector<size_t> efs{6000, 7000, 8000, 9000, 10000};
-    // vector<size_t> efs{200, 250, 300, 400, 500, 600};
+    vector<size_t> efs{200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{2000, 2500, 3000, 3500, 4000, 4500, 5000};
     // vector<size_t> efs{6000, 8000, 10000};
@@ -213,12 +215,12 @@ int main(int argc, char * argv[]) {
     int iarg = -1;
     opterr = 1;    //getopt error message (off: 0)
 
-    // 0: original HNSW,         2: ADS 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: PCA 9:DWT 10:Finger
+    // 0: original HNSW,         2: ADS 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: PCA 9:DWT 10:Finger 11:SEANet
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 4;
-    string data_str = "gauss";   // dataset name
+    int randomize = 11;
+    string data_str = "imagenet";   // dataset name
     string M_str ="16"; // 8 for msong,mnist, 48 for nuswide
 #ifdef SYNTHETIC
     string syn_dim  = "50";
@@ -278,6 +280,7 @@ int main(int argc, char * argv[]) {
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string SVD_index_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string DWT_index_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string SEANet_index_path_str = base_path_str + "/SEANet_data/SEANet_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
     string result_prefix_str = "";
     #ifdef USE_SIMD
@@ -299,6 +302,8 @@ int main(int argc, char * argv[]) {
     string pca_dist_distribution_path_str = base_path_str + "/" + data_str + "/PCA_dist_distrib.floats";
     string dwt_data_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_base.fvecs";
     string dwt_query_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_query.fvecs";
+    string seanet_query_path_str = base_path_str + "/SEANet_data/SEANet_" + data_str + "_query.fvecs";
+    string seanet_data_path_str = base_path_str + "/SEANet_data/SEANet_" + data_str + "_base.fvecs";
     string paa_path_str = base_path_str + "/" + data_str + "/PAA_" + to_string(paa_segment) + "_" + data_str + "_base.fvecs";
     string pq_codebook_path_str = base_path_str + "/" + data_str + "/PQ_codebook_" + to_string(pq_m) + "_" + to_string(pq_ks) + ".fdat";
     string pq_codes_path_str = base_path_str + "/" + data_str + "/PQ_" + to_string(pq_m) + "_" + to_string(pq_ks) + "_" + data_str + "_base.ivecs";
@@ -360,6 +365,12 @@ int main(int argc, char * argv[]) {
     strcpy(dwt_index_path, DWT_index_path_str.c_str());
     char dwt_query_path[256] = "";
     strcpy(dwt_query_path, dwt_query_path_str.c_str());
+    char seanet_index_path[256] = "";
+    strcpy(seanet_index_path, SEANet_index_path_str.c_str());
+    char seanet_query_path[256] = "";
+    strcpy(seanet_query_path, seanet_query_path_str.c_str());
+    char seanet_data_path[256] = "";
+    strcpy(seanet_data_path, seanet_data_path_str.c_str());
     char finger_projection_path[256] = "";
     strcpy(finger_projection_path, finger_projection_path_str.c_str());
     char finger_b_dres_path[256] = "";
@@ -601,6 +612,14 @@ int main(int argc, char * argv[]) {
         StopW stopw = StopW();
         finger::q_Ps = mul(Q, finger::P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+    } else if(randomize == 11){  // SEANet
+        seanet::lsh_table = Matrix<float>(seanet_data_path);
+        StopW stopw = StopW();
+        seanet::queries_lsh = Matrix<float>(seanet_query_path);
+        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        seanet::D = Q.d;
+        seanet::lowdim = seanet::queries_lsh.d;
+        seanet::initialize();
     }
     
     Q.n = Q.n > 500 ? 500 : Q.n;

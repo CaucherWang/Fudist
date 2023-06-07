@@ -3,7 +3,7 @@ cd ..
 
 efConstruction=500
 M=16
-data='mnist'
+data='gist'
 
 g++ -o ./src/index_hnsw ./src/index_hnsw.cpp -I ./src/ -O3 -mavx2 -fopenmp
 
