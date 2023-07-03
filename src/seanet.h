@@ -18,6 +18,7 @@ namespace seanet{
     Matrix<float> lsh_table, queries_lsh;
 
     unsigned int cur_query_label;
+    float amp, ratio;
 
     L2Space* lowdimspace;
     hnswlib::DISTFUNC<float> fstdistfunc_;
@@ -31,6 +32,7 @@ namespace seanet{
         lowdimspace = new L2Space(lowdim);
         fstdistfunc_ = lowdimspace->get_dist_func();
         dist_func_param_ = lowdimspace->get_dist_func_param();
+        amp = D / lowdim;
 	}
 
 
@@ -58,7 +60,7 @@ namespace seanet{
 #ifdef COUNT_DIMENSION
     adsampling::tot_dimension += lowdim;
 #endif
-        return dis >= bsf ? -dis : dis;
+        return dis >= bsf * ratio ? -dis : dis;
     }
 
     // struct HashParam

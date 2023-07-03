@@ -107,12 +107,13 @@ width = 1.4
 
 
 # deep
-plt.plot(hnsw[1][:], hnsw[0][:], marker='d', label='HNSW', markersize=5, linewidth=width, color='mediumpurple', alpha=0.9)
 plt.plot(ads[1][:], ads[0][:], marker='o', label='ADS', markersize=4, linewidth=width, color='firebrick', alpha=1)
 plt.plot(pca[1][:], pca[0][:],  marker='*', label='PCA', markersize=7, linewidth=width, color='indianred', alpha=0.9)
 plt.plot(lsh[1][:], lsh[0][:], marker='+', label='LSH', markersize=7, linewidth=width, color='olive')
 plt.plot(dwt[1], dwt[0], marker='x', label='DWT', markersize=4, linewidth=width, color='darkgray')
 plt.plot(opq[1][:], opq[0][:], marker='D', label='OPQ', markersize=3, linewidth=width, color='steelblue', alpha=0.9)
+plt.plot(hnsw[1][:], hnsw[0][:], marker='d', label='HNSW', markersize=5, linewidth=width, color='mediumpurple', alpha=0.9)
+
 # plt.plot(finger[1][:], finger[0][:], marker='s', label='FINGER', markersize=3, linewidth=width, color='darkorange', alpha=0.9)
 
 # plt.xlim(0.1,1)
@@ -121,14 +122,14 @@ plt.plot(opq[1][:], opq[0][:], marker='D', label='OPQ', markersize=3, linewidth=
 # plt.yscale('log')
 # plt.xscale('log')
 # plt.xticks([0.1,0.3,0.5,0.7,1],[0.1,0.3,0.5,0.7,1],fontsize=18)
-plt.xticks(fontsize=16)
-plt.yticks(fontsize=16)
+plt.xticks(fontsize=22)
+plt.yticks(fontsize=22)
 # plt.yticks([1e1,1e2,1e3,1e4],['$10^1$','$10^2$','$10^3$','$10^4$'],fontsize=18)
 # plt.yticks([1e1,1e2,1e3,1e4],['$10^1$','$10^2$','$10^3$','$10^4$'],fontsize=18)
 
 # plt.legend(loc="best", fontsize=15)
-plt.ylabel(f"Relative accuracy", fontsize=16)
-plt.xlabel("# Distance comparison ($10^3$)", fontsize=16)
+plt.ylabel(f"Relative accuracy", fontsize=22)
+plt.xlabel("# Distance comparison ($10^3$)", fontsize=22)
 # plt.title('rand-256-100m (100GB)', fontsize=20)
 plt.legend(loc='best', fontsize=16)  #显示图中左上角的标识区域
 # plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=6,mode="expand", borderaxespad=0.,fontsize=15.5)  #显示图中左上角的标识区域

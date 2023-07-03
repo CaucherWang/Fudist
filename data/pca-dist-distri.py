@@ -9,16 +9,48 @@ source = './data/'
 datasets = ['gist']
 datasets_map = {
     'imagenet': (6, 200),
-    'msong': (6, 1000),
-    'word2vec': (6, 1000),
-    'ukbench': (8, 200),
-    'gist': (8, 1000),
-    'deep': (8, 1000),
-    'glove1.2m': (8, 1000),
-    'sift': (8, 1000),
-    'tiny5m': (8, 1000),
+    # 'msong': (6, 1000),
+    # 'word2vec': (6, 1000),
+    # 'ukbench': (8, 200),
+    # 'deep': (8, 1000),
+    # 'gist': (8, 1000),
+    # 'glove1.2m': (8, 1000),
+    # 'sift': (8, 1000),
+    # 'tiny5m': (8, 1000),
+    # 'uqv':(8,1000),
+    # 'glove-100':(4,1000),
+    # 'crawl': (6, 1000),
+    # 'enron': (8, 1000),
+    # 'mnist': (8, 1000),
+    # 'cifar': (8, 200),
+    # 'sun':(8, 200),
+    # 'notre':(8, 200),
+    # 'nuswide':(4, 200),
+    # 'trevi': (8, 200)
 }
 
+
+datasets_map = {
+    # 'imagenet': (6, 200),
+    # 'msong': (6, 1000),
+    # 'word2vec': (6, 1000),
+    # 'ukbench': (8, 200),
+    # 'deep': (8, 1000),
+    # # 'gist': (8, 1000),
+    # # 'glove1.2m': (8, 1000),
+    # 'sift': (8, 1000),
+    # 'tiny5m': (8, 1000),
+    # # 'uqv':(8,1000),
+    # 'glove-100':(4,1000),
+    # 'crawl': (6, 1000),
+    # # 'enron': (8, 1000)
+    # 'mnist': (8, 1000),
+    'cifar': (8, 200),
+    'sun':(8, 200),
+    'notre':(8, 200),
+    'nuswide':(4, 200),
+    'trevi': (8, 200)
+}
 
 def read_fvecs(filename, c_contiguous=True):
     fv = np.fromfile(filename, dtype=np.float32)

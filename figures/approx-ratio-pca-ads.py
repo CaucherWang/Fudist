@@ -15,18 +15,25 @@ def read_floats(filename, c_contiguous=True):
         fv = fv.copy()
     return fv
 
-
-datsets_map = {
-    # 'imagenet': (6, 200),
-    # 'msong': (6, 1000),
-    # 'word2vec': (6, 1000),
-    # 'ukbench': (8, 200),
-    'deep': (8, 1000, 16),
-    'gist': (8, 1000, 96),
-    'glove1.2m': (8, 1000, 20),
-    'sift': (8, 1000, 16),
+datasets_map = {
+    'imagenet': (6, 200),
+    'msong': (6, 1000),
+    'word2vec': (6, 1000),
+    'ukbench': (8, 200),
+    'deep': (8, 1000),
+    # 'gist': (8, 1000),
+    'sift': (8, 1000),
     'tiny5m': (8, 1000),
+    'glove-100':(4,1000),
+    'crawl': (6, 1000),
+    'mnist': (8, 1000),
+    'cifar': (8, 200),
+    'sun':(8, 200),
+    'notre':(8, 200),
+    'nuswide':(4, 200),
+    'trevi': (8, 200)
 }
+
 
 # for dataset in datsets_map:
 #     source = './data/'
@@ -39,27 +46,31 @@ datsets_map = {
 
 
 
-ratios = {}
-source = './data/'
-dataset = 'gist'
-path = os.path.join(source, dataset)
-for sample in [0.2, 0.4, 0.6, 0.8]:
-    ratios[f'PCA-{sample}'] = list(read_floats(os.path.join(path, f'PCA_{sample}_approx_dist.floats')))
+for dataset in datasets_map.keys():
+    ratios = {}
+    source = './data/'
+    path = os.path.join(source, dataset)
+    for sample in [0.2, 0.4, 0.6, 0.8]:
+        ratios[f'PCA-{sample}'] = list(read_floats(os.path.join(path, f'PCA_{sample}_approx_dist.floats')))
 
-for sample in [0.2, 0.4, 0.6, 0.8]:
-    ratios[f'DWT-{sample}'] = list(read_floats(os.path.join(path, f'DWT_{sample}_approx_dist.floats')))
+    for sample in [0.2, 0.4, 0.6, 0.8]:
+        ratios[f'DWT-{sample}'] = list(read_floats(os.path.join(path, f'DWT_{sample}_approx_dist.floats')))
 
-for sample in [0.2, 0.4, 0.6, 0.8]:
-    ratios[f'ADS-{sample}'] = list(read_floats(os.path.join(path, f'ADS_{sample}_approx_dist.floats')))
+    for sample in [0.2, 0.4, 0.6, 0.8]:
+        ratios[f'ADS-{sample}'] = list(read_floats(os.path.join(path, f'ADS_{sample}_approx_dist.floats')))
+
+    fig = plt.figure(figsize=(9,4.2))
+
+    # plot the shaded box plots on ratios, the x-axis is the method name, the y-axis is the ratio
+    plt.boxplot(ratios.values(), labels=ratios.keys(), showfliers=False, medianprops={'color':'blue', 'linewidth':2}, boxprops={'color':'black', 'linewidth':2}, whiskerprops={'color':'black', 'linewidth':2}, capprops={'color':'black', 'linewidth':2})
+    plt.ylabel("Approximation Ratio", fontsize=22)
+    plt.xticks(rotation = 45, fontsize=24)
+    plt.yticks(fontsize=22)
 
 
+    plt.tight_layout()
 
-# plot the shaded box plots on ratios, the x-axis is the method name, the y-axis is the ratio
-plt.boxplot(ratios.values(), labels=ratios.keys(), showfliers=False, medianprops={'color':'blue', 'linewidth':2}, boxprops={'color':'black', 'linewidth':2}, whiskerprops={'color':'black', 'linewidth':2}, capprops={'color':'black', 'linewidth':2})
-plt.ylabel("Approximation Ratio", fontsize=16)
-plt.tight_layout()
-
-plt.savefig(f'./figures/fig/app-ratio-incremental-{dataset}.png',  format='png')
+    plt.savefig(f'./figures/fig/app-ratio-incremental-{dataset}.png',  format='png')
 # x = ['1k', '2.5k', '5k', '10k', '25k', '50k','100k']
 # x = [1000, 2500, 5000, 10000, 25000, 50000, 100000]
 # paris = [27.62, 70.9, 197.6, 503.37, 1208, 2442]

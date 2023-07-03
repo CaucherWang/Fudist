@@ -23,7 +23,7 @@ datasets_map = {
     'crawl': (6, 1000),
     'enron': (8, 1000),
     'mnist': (8, 1000),
-    'cifar': (8, 1000),
+    'cifar': (8, 200),
     'sun':(8, 200),
     'notre':(8, 200),
     'nuswide':(4, 200),

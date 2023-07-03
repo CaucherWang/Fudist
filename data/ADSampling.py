@@ -7,7 +7,7 @@ import math
 source = './data/'
 datasets = ['imagenet', 'ukbench', 'word2vec']
 datasets_map = {
-    # 'imagenet': (6, 200),
+    'imagenet': (6, 200),
     # 'msong': (6, 1000),
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
@@ -26,16 +26,38 @@ datasets_map = {
     # 'notre':(8, 200),
     # 'nuswide':(4, 200),
     # 'trevi': (8, 200)
-    'gauss50':(),
-    'gauss100':(),
-    'gauss150':(),
-    'gauss200':(),
-    'gauss250':(),
-    'gauss300':(),
-    'gauss500':(),
-    'gauss1000':(),
-    'gauss2000':(),
-    'gauss4000':(),
+    # 'gauss50':(),
+    # 'gauss100':(),
+    # 'gauss150':(),
+    # 'gauss200':(),
+    # 'gauss250':(),
+    # 'gauss300':(),
+    # 'gauss500':(),
+    # 'gauss1000':(),
+    # 'gauss2000':(),
+    # 'gauss4000':(),
+}
+
+datasets_map = {
+    # 'imagenet': (6, 200),
+    # 'msong': (6, 1000),
+    # 'word2vec': (6, 1000),
+    # 'ukbench': (8, 200),
+    # 'deep': (8, 1000),
+    # # 'gist': (8, 1000),
+    # # 'glove1.2m': (8, 1000),
+    # 'sift': (8, 1000),
+    # 'tiny5m': (8, 1000),
+    # # 'uqv':(8,1000),
+    # 'glove-100':(4,1000),
+    # 'crawl': (6, 1000),
+    # # 'enron': (8, 1000)
+    # 'mnist': (8, 1000),
+    'cifar': (8, 200),
+    'sun':(8, 200),
+    'notre':(8, 200),
+    'nuswide':(4, 200),
+    'trevi': (8, 200)
 }
 
 def read_fvecs(filename, c_contiguous=True):
@@ -119,25 +141,25 @@ if __name__ == "__main__":
         projection_path = os.path.join(path, 'O.fvecs')
         transformed_path = os.path.join(path, f'O{dataset}_base.fvecs')
 
-        to_fvecs(projection_path, P)
-        to_fvecs(transformed_path, XP)
+        # to_fvecs(projection_path, P)
+        # to_fvecs(transformed_path, XP)
 
-        # sampleQuery = datasets_map[dataset][1]
-        # sampleBase = 10000
-        # query_path = os.path.join(path, f'{dataset}_query.fvecs')
-        # dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
-        # sample = 0.2
-        # U = read_fvecs(projection_path)
-        # lowdim = int(U.shape[0] * sample)
-        # r = ratio(U.shape[0], lowdim, 2.1)
-        
-        # X = read_fvecs(transformed_path)[:sampleBase, :lowdim]
-        # Q = read_fvecs(query_path)[:sampleQuery]
-        # Q = np.dot(Q, U)[ : , :lowdim]
-        # RealDist = read_fvecs(dist_path)
-        # result = calc_approx_dist(X, Q, RealDist, r)
-        # result = np.array(result)
-        # result = np.sort(result)
-        # result_path = os.path.join(path, f'ADS_{sample}_approx_dist.floats')
-        # to_floats(result_path, result)
-        
+        sampleQuery = datasets_map[dataset][1]
+        sampleBase = 10000
+        query_path = os.path.join(path, f'{dataset}_query.fvecs')
+        dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
+        for sample in [0.2, 0.4, 0.5, 0.6, 0.8]:
+            U = read_fvecs(projection_path)
+            lowdim = int(U.shape[0] * sample)
+            r = ratio(U.shape[0], lowdim, 2.1)
+            
+            X = read_fvecs(transformed_path)[:sampleBase, :lowdim]
+            Q = read_fvecs(query_path)[:sampleQuery]
+            Q = np.dot(Q, U)[ : , :lowdim]
+            RealDist = read_fvecs(dist_path)
+            result = calc_approx_dist(X, Q, RealDist, r)
+            result = np.array(result)
+            result = np.sort(result)
+            result_path = os.path.join(path, f'ADS_{sample}_approx_dist.floats')
+            to_floats(result_path, result)
+            

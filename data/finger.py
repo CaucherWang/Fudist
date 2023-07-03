@@ -71,33 +71,33 @@ def get_neighbors_with_external_label(data_level_0, external_label, size_data_pe
 
 source = './data'
 datasets_map = {
-        'trevi':(16, 8, 64),
+        # 'trevi':(16, 8, 64),
             # 'mnist':(8, 8, 64),
     # 'gist': (16, 8, 96),
 
 
     # 'imagenet': (16,6, 16),
-    # 'msong': (8,6),
+    'msong': (8,6),
     # 'word2vec': (48, 6, 16),
-    # 'ukbench': (16,8),
+    'ukbench': (16,8),
     # 'deep': (16, 8, 16),
-    # 'glove1.2m': (128, 8, 20),
-    # 'sift': (16, 8, 16),
-    # 'tiny5m': (48, 8, 16),
-    # 'uqv':(16, 8, 16),
-    # 'glove-100':(16, 4, 16),
-    # 'crawl': (16, 6, 16),
-    # 'enron':(16, 8, 64),
+    'glove1.2m': (128, 8, 20),
+    'sift': (16, 8, 16),
+    'tiny5m': (48, 8, 16),
+    'uqv':(16, 8, 16),
+    'glove-100':(16, 4, 16),
+    'crawl': (16, 6, 16),
+    'enron':(16, 8, 64),
     # 'cifar': (8,8,64),
     # 'sun': (8, 8, 64),
-    # 'notre':(8, 8, 16),
-    # 'nuswide':(48, 10, 64),
+    'notre':(8, 8, 16),
+    'nuswide':(48, 10, 64),
 }
 
 ef = 500
 M = 16
 
-lsh_dim = 16
+lsh_dim = 64
 
 if __name__ == '__main__':
     for dataset in datasets_map.keys():

@@ -48,7 +48,7 @@ def plot_embedding(data, label, title):
 
 import os
 source = './data/'
-dataset = 'glove1.2m'
+dataset = 'mnist'
 
 def main():
     path = os.path.join(source, dataset)
@@ -64,6 +64,9 @@ def main():
     
     label = [1] * data.shape[0]
     query = read_fvecs(query_path)
+    if query.shape[0] > 1000:
+        query = query[np.random.choice(query.shape[0], 1000, replace=False), :]
+
     label2 = [0] * query.shape[0]
     label = label + label2
     data = np.concatenate((data, query), axis=0)

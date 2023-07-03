@@ -9,7 +9,7 @@ source = './data/'
 datasets = ['imagenet']
 
 datasets_map = {
-    'imagenet': (6, 200),
+    # 'imagenet': (6, 200),
     # 'msong': (6, 1000),
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
@@ -22,10 +22,33 @@ datasets_map = {
     # 'glove-100':(4,1000),
     # 'crawl': (6, 1000),
     # 'mnist': (8, 1000),
-    # 'cifar': (8, 1000),
+    # 'cifar': (8, 200),
     # 'sun':(8, 200),
     # 'notre':(8, 200),
     # 'nuswide':(10, 200),
+    # 'trevi': (8, 200)
+    # 'enron': (13, 200)
+}
+
+datasets_map = {
+    # 'imagenet': (6, 200),
+    # 'msong': (6, 1000),
+    # 'word2vec': (6, 1000),
+    # 'ukbench': (8, 200),
+    # 'deep': (8, 1000),
+    # 'gist': (8, 1000),
+    # 'glove1.2m': (8, 1000),
+    # 'sift': (8, 1000),
+    # 'tiny5m': (8, 1000),
+    # 'uqv':(8,1000),
+    # 'glove-100':(4,1000),
+    # 'crawl': (6, 1000),
+    # 'enron': (8, 1000)
+    'mnist': (8, 1000),
+    # 'cifar': (8, 200),
+    # 'sun':(8, 200),
+    # 'notre':(8, 200),
+    # 'nuswide':(4, 200),
     # 'trevi': (8, 200)
 }
 
@@ -105,7 +128,7 @@ if __name__ == "__main__":
     
     for dataset in datasets_map.keys():
         np.random.seed(0)
-        Ks = 512
+        Ks = 256
 
         
         sampleQuery = datasets_map[dataset][1]

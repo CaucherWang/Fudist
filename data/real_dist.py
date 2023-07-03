@@ -10,6 +10,11 @@ datasets = ['trevi']
 # datasets = ['word2vec', 'imagenet']
 # datasets = ['msong', 'sift', 'tiny5m', 'ukbench', 'word2vec']
 
+datasets = ['crawl', 'notre', 'ukbench', 'tiny5m', 'nuswide', 'glove-100', 'cifar', 'sun', 'sift', 'msong']
+
+datasets = ['cifar']
+
+
 def to_ivecs(filename: str, array: np.ndarray):
     print(f"Writing File - {filename}")
     topk = (np.int32)(array.shape[1])

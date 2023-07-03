@@ -2,6 +2,7 @@ import os
 import numpy as np
 import struct
 import time
+from numba import njit
 
 source = './data/'
 # datasets = ['deep', 'gist', 'glove1.2m', 'msong', 'sift', 'tiny5m', 'ukbench', 'word2vec']
@@ -13,22 +14,20 @@ datasets_map = {
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
     # 'deep': (8, 1000),
-    'gist': (8, 1000),
-    # 'glove1.2m': (8, 1000),
+    # # 'gist': (8, 1000),
+    # # 'glove1.2m': (8, 1000),
     # 'sift': (8, 1000),
     # 'tiny5m': (8, 1000),
-    # 'uqv':(8,1000),
+    # # 'uqv':(8,1000),
     # 'glove-100':(4,1000),
     # 'crawl': (6, 1000),
-    # 'enron': (8, 1000)
+    # # 'enron': (8, 1000)
     # 'mnist': (8, 1000),
-    # 'cifar': (8, 1000),
-    # 'sun':(8, 200),
-    # 'notre':(8, 200),
-    # 'nuswide':(4, 200),
-    # 'trevi': (8, 200)
-
-
+    'cifar': (8, 200),
+    'sun':(8, 200),
+    'notre':(8, 200),
+    'nuswide':(4, 200),
+    'trevi': (8, 200)
 }
 
 def read_fvecs(filename, c_contiguous=True):
@@ -66,7 +65,7 @@ def to_floats(filename, data):
 def generate_matrix(lowdim, D):
     return np.random.normal(size=(lowdim, D))
 
-
+@njit
 def calc_approx_dist(XP, XQ, RealDist):
     # return: approximated distance between Q and X / RealdDist
     result = []
@@ -116,7 +115,8 @@ if __name__ == "__main__":
         # generate random orthogonal matrix, store it and apply it
         
         # print(f"LSH {dataset} of dimensionality {D}.")
-        # P = generate_matrix(lowdim, D)
+        P = generate_matrix(lowdim, D)
+        P = P.T
         # XP = np.dot(X, P.T)
         
         projection_path = os.path.join(path, f'LSH{lowdim}.fvecs')
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         # to_fvecs(projection_path, P.T)
         # to_fvecs(transformed_path, XP)
         
-        P = read_fvecs(os.path.join(path, f'LSH{lowdim}.fvecs'))
+        # P = read_fvecs(os.path.join(path, f'LSH{lowdim}.fvecs'))
         XP = np.dot(X[:sampleBase], P)
         XQ = np.dot(Q[:sampleQuery], P)
         

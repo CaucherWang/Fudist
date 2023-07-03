@@ -1,13 +1,11 @@
+#define USE_SIMD
 
 
-// #define USE_SIMD
-
-
-#define COUNT_DIMENSION
+// #define COUNT_DIMENSION
 // #define COUNT_FN
-#define COUNT_DIST_TIME
+// #define COUNT_DIST_TIME
 // #define ED2IP
-#define  SYNTHETIC
+// #define  SYNTHETIC
 #ifndef USE_SIMD
 #define EIGEN_DONT_PARALLELIZE
 #define EIGEN_DONT_VECTORIZE
@@ -94,6 +92,80 @@ int recall(std::priority_queue<std::pair<float, labeltype >> &result, std::prior
     return ret;
 }
 
+static void test_approx_deep_dive(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
+            vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
+    size_t correct = 0;
+    size_t total = 0;
+    long double total_time = 0;
+
+    adsampling::clear();
+
+    for(int _ = 0; _ < 3; ++_){
+        for (int i = 0; i < qsize; i++) {
+            paa::cur_query_label = i;
+            lsh::cur_query_label = i;
+            adsampling::cur_query_label = i;
+            svd::cur_query_label = i;
+            pq::cur_query_label = i;
+            seanet::cur_query_label = i;
+#ifdef ED2IP
+    hnswlib::cur_query_vec_len = hnswlib::query_vec_len[i];
+#endif
+#ifndef WIN32
+            float sys_t, usr_t, usr_t_sum = 0;  
+            struct rusage run_start, run_end;
+            GetCurTime( &run_start);
+#endif
+            std::priority_queue<std::pair<float, labeltype >> result = appr_alg.searchKnn(massQ + vecdim * i, k, adaptive);  
+#ifndef WIN32
+            GetCurTime( &run_end);
+            GetTime( &run_start, &run_end, &usr_t, &sys_t);
+            total_time += usr_t * 1e6;
+#endif
+            if(_ == 0){
+                std::priority_queue<std::pair<float, labeltype >> gt(answers[i]);
+                total += gt.size();
+                int tmp = recall(result, gt);
+                correct += tmp;   
+            }
+        }
+    }
+
+    long double time_us_per_query = total_time / qsize / 3.0 + rotation_time;
+    long double dist_calc_time = adsampling::distance_time / qsize / 3.0;
+    long double app_dist_calc_time = adsampling::approx_dist_time / qsize / 3.0;
+    long double approx_dist_per_query = adsampling::tot_approx_dist / (double)qsize / 3.0;
+    long double full_dist_per_query = adsampling::tot_full_dist / (double)qsize / 3.0;
+    long double tot_dist_per_query = adsampling::tot_dist_calculation / (double)qsize / 3.0;
+    long double tot_dim_per_query = adsampling::tot_dimension / (double)qsize / 3.0;
+    double fn_ratio = adsampling::tot_fn / (double)adsampling::tot_approx_dist;
+    long double recall = 1.0f * correct / total;
+
+    cout << setprecision(6);
+    
+    // cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " " << adsampling::tot_dimension + adsampling::tot_full_dist * vecdim << endl;
+    cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query 
+    << " ||| full dist time: " << dist_calc_time << " ||| approx. dist time: " << app_dist_calc_time 
+    << " ||| #full dists: " << full_dist_per_query << " ||| #approx. dist: " << approx_dist_per_query 
+    << endl << "\t\t" 
+    << " ||| # total dists: " << (long long) tot_dist_per_query 
+#ifdef COUNT_DIMENSION   
+    << " ||| total dimensions: "<< (long long)tot_dim_per_query
+#endif
+    // << (long double)adsampling::tot_full_dist / (long double)adsampling::tot_dist_calculation 
+    << " ||| pruining ratio (vector-level): " <<  (1 - full_dist_per_query / tot_dist_per_query) * 100.0
+#ifdef COUNT_DIMENSION
+    << " ||| pruning ratio (dimension-level)" << (1 - tot_dim_per_query / (tot_dist_per_query * vecdim)) * 100.0
+#endif
+    << endl << "\t\t ||| preprocess time: " << rotation_time  
+#ifdef COUNT_FN
+    <<" ||| FALSE negative ratio = " << fn_ratio * 100.0
+#endif
+    << endl;
+    return ;
+}
+
+
 
 static void test_approx(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
             vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
@@ -170,15 +242,17 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
 
 static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    vector<size_t> efs{100, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
+    // vector<size_t> efs{100, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
     // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
+    // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250};
     // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500};
     // vector<size_t> efs{500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000};
-    // vector<size_t> efs{6000, 7000, 8000, 9000, 10000};
-    vector<size_t> efs{200, 250, 300, 400, 500, 600};
+    // vector<size_t> efs{300, 500, 700, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
+    // vector<size_t> efs{2000, 3000, 4000};
+    // vector<size_t> efs{200, 250, 300, 400, 500, 600, 750, 1000, 1500};
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600};
     // vector<size_t> efs{2000, 2500, 3000, 3500, 4000, 4500, 5000};
-    // vector<size_t> efs{6000, 8000, 10000};
+    vector<size_t> efs{5000};
     // vector<size_t> efs{5000, 8000};
     // vector<size_t> efs{50, 100, 150};
 
@@ -212,33 +286,44 @@ int main(int argc, char * argv[]) {
     };
 
     int ind;
-    int iarg = -1;
+    int iarg = 0;
     opterr = 1;    //getopt error message (off: 0)
 
     // 0: original HNSW,         2: ADS 3: PAA 4: LSH 5: SVD 6: PQ 7: OPQ 8: PCA 9:DWT 10:Finger 11:SEANet
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 7;
+    int randomize = 0;
     string data_str = "glove1.2m";   // dataset name
-    string M_str ="128"; // 8 for msong,mnist, 48 for nuswide
+    string M_str ="32"; // 8 for msong,mnist,cifar  48 for nuswide
+
+    while(iarg != -1){
+        iarg = getopt_long(argc, argv, "d:", longopts, &ind);
+        switch (iarg){
+            case 'd':
+                if(optarg)randomize = atoi(optarg);
+                break;
+        }
+    }
+
 #ifdef SYNTHETIC
     string syn_dim  = "50";
 #endif
     float ads_epsilon0 = 2.1;
-    int ads_delta_d = 32;
-    int pca_delta_d = 32;
-    int dwt_delta_d = 32;
+    int ads_delta_d = 16;
+    int pca_delta_d = 16;
+    int dwt_delta_d = 16;
     int paa_segment = 96;
-    int lsh_dim = 64;
-    double lsh_p_tau = 0.9;
-    int pq_m = 8;   // glove-100:4, msong, imagenet,word2vec:6  nuswide:10
+    int lsh_dim = 16; 
+    double lsh_p_tau = 0.95;
+    int pq_m = 6;   // glove-100:4, msong, imagenet,word2vec:6  nuswide:10
     int pq_ks = 256;
     float pq_epsilon = 1;
     float qeo_check_threshold = 0.95;
     int qeo_check_num = 2;
     int finger_lsh_dim = 64;
     float finger_ratio = 1.5;
+    float seanet_ratio = 1.5;
 
     int subk=20;
     string base_path_str = "../data";
@@ -272,7 +357,9 @@ int main(int argc, char * argv[]) {
         case 10:
             exp_name = "FINGER";
             break;
-        
+        case 11:
+            exp_name = "SEANet";
+            break;
     }
 
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
@@ -385,11 +472,11 @@ int main(int argc, char * argv[]) {
     strcpy(finger_start_idx_path, finger_start_idx_path_str.c_str());
 
     while(iarg != -1){
-        iarg = getopt_long(argc, argv, "d:i:q:g:r:t:n:k:e:p:", longopts, &ind);
+        iarg = getopt_long(argc, argv, "i:q:g:r:t:n:k:e:p:", longopts, &ind);
         switch (iarg){
-            case 'd':
-                if(optarg)randomize = atoi(optarg);
-                break;
+            // case 'd':
+            //     if(optarg)randomize = atoi(optarg);
+            //     break;
             case 'k':
                 if(optarg)subk = atoi(optarg);
                 break;
@@ -419,7 +506,6 @@ int main(int argc, char * argv[]) {
                 break;
         }
     }
-
     
     Matrix<float> Q(query_path);
     Matrix<unsigned> G(groundtruth_path);
@@ -576,7 +662,7 @@ int main(int argc, char * argv[]) {
         }
         cout << endl;
     } else if(randomize == 9){  // DWT
-        cout << pca_delta_d << " ";
+        cout << dwt_delta_d << " ";
         if(randomize == 91) cout << " tight BSF";
         cout << endl;
         dwt::initialize(dwt_delta_d);
@@ -613,6 +699,7 @@ int main(int argc, char * argv[]) {
         finger::q_Ps = mul(Q, finger::P);
         rotation_time = stopw.getElapsedTimeMicro() / Q.n;
     } else if(randomize == 11){  // SEANet
+        cout << seanet_ratio << endl;
         seanet::lsh_table = Matrix<float>(seanet_data_path);
         StopW stopw = StopW();
         seanet::queries_lsh = Matrix<float>(seanet_query_path);
@@ -620,6 +707,7 @@ int main(int argc, char * argv[]) {
         seanet::D = Q.d;
         seanet::lowdim = seanet::queries_lsh.d;
         seanet::initialize();
+        seanet::ratio = seanet_ratio;
     }
     
     Q.n = Q.n > 500 ? 500 : Q.n;

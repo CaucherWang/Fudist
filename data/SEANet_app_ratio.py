@@ -18,7 +18,7 @@ datasets_map = {
     # 'word2vec': (6, 1000),
     # 'ukbench': (8, 200),
     # 'deep': (8, 1000),
-    'gist': (8, 1000),
+    # 'gist': (8, 1000),
     # 'glove1.2m': (8, 1000),
     # 'sift': (8, 1000),
     # 'tiny5m': (8, 1000),
@@ -27,8 +27,8 @@ datasets_map = {
     # 'crawl': (6, 1000),
     # 'enron': (8, 1000)
     # 'mnist': (8, 1000),
-    # 'cifar': (8, 1000),
-    # 'sun':(8, 200),
+    'cifar': (8, 1000),
+    'sun':(8, 200),
     # 'notre':(8, 200),
     # 'nuswide':(4, 200),
     # 'trevi': (8, 200)
@@ -96,24 +96,28 @@ if __name__ == "__main__":
         
         sampleQuery = datasets_map[dataset][1]
         sampleBase = 10000
+        sampleQuery = 1000
         
         # path
-        path = os.path.join(source, dataset)
-        data_path = os.path.join(path, f'SEANet_{dataset}_{epoch}e_base.bin')
-        query_path = os.path.join(path, f'SEANet_{dataset}_{epoch}e_query.bin')
-        dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
-
+        seanet_path = os.path.join(source, f'SEANet_data')
+        data_path = os.path.join(seanet_path, f'SEANet_{dataset}_base.fvecs')
+        query_path = os.path.join(seanet_path, f'SEANet_{dataset}_query.fvecs')
+        
+        
         # read data vectors
         print(f"Reading {dataset} from {data_path}.")
-        X = read_bin(data_path, dim)
+        X = read_fvecs(data_path)
         D = X.shape[1]
-        Q = read_bin(query_path, dim)
+        Q = read_fvecs(query_path)
+        
+        sampleBase = min(sampleBase, X.shape[0])
+        sampleQuery = min(sampleQuery, Q.shape[0])
 
         print(f"{dataset} of dimensionality {D} of cardinality {X.shape[0]}.")
         
+        path = os.path.join(source, dataset)
+        dist_path = os.path.join(path, f'Real_Dist_{sampleBase}_{sampleQuery}.fvecs')
         RealDist = read_fvecs(dist_path)
-        sampleQuery = RealDist.shape[0]
-        sampleBase = RealDist.shape[1]
 
         
         # generate random orthogonal matrix, store it and apply it
@@ -127,9 +131,13 @@ if __name__ == "__main__":
         
         
         result = calc_approx_dist(X[:sampleBase], Q[:sampleQuery], RealDist)
-        print(np.quantile(result, 0.25), np.quantile(result, 0.5), np.quantile(result, 0.75))
+        print(np.quantile(result, 0.1),
+              np.quantile(result, 0.25),
+              np.quantile(result, 0.5),
+              np.quantile(result, 0.75),
+              np.quantile(result, 0.9))
         
-        result_path = os.path.join(path, f'SEANet_{dim}_{epoch}e_approx_dist.floats')
+        result_path = os.path.join(path, f'SEANet_{dataset}_approx_dist.floats')
         to_floats(result_path, result)
 
         

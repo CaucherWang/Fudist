@@ -72,14 +72,36 @@ namespace pq{
         float dis = 0;  
         int i = 0;
         auto start = cur_query_label * M * Ks;
+        auto dt = query_dist_book.data + start;
         for(; i < M; ++i){
-            dis += query_dist_book.data[start + i * Ks + cand[i]];
-            // if(dis >= bsf){
-            //     break;
-            // }
+            dis += dt[i * Ks + cand[i]];
         }
 
-#ifdef COUNT_DIMENSION            
+        // buggy code
+        // for(; i < M; i +=4){
+        //     float dsim = 0;
+        //     dsim += dt[*cand++];
+        //     dt += Ks;
+        //     dsim += dt[*cand++];
+        //     dt += Ks;
+        //     dsim += dt[*cand++];
+        //     dt += Ks;
+        //     dsim += dt[*cand++];
+        //     dis += dsim;
+        // }
+
+        // for(; i < M; i +=4){
+        //     float dsim = 0;
+        //     dsim += dt[cand[i]];
+        //     dt += Ks;
+        //     dsim += dt[cand[i+1]];
+        //     dt += Ks;
+        //     dsim += dt[cand[i+2]];
+        //     dt += Ks;
+        //     dsim += dt[cand[i+3]];
+        //     dis += dsim;
+        // }
+        #ifdef COUNT_DIMENSION            
     adsampling::tot_dimension += i;
     // adsampling::tot_comp_dim += i;
 #endif

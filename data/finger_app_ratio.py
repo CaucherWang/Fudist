@@ -133,25 +133,24 @@ datasets_map = {
     # 'word2vec': (48, 6, 16),
     # 'ukbench': (16,8),
     # 'deep': (16, 8, 16),
-    'gist': (16, 8, 96),
-    # 'glove1.2m': (128, 8, 20),
     # 'sift': (16, 8, 16),
     # 'tiny5m': (48, 8, 16),
-    # 'uqv':(16, 8, 16),
     # 'glove-100':(16, 4, 16),
     # 'crawl': (16, 6, 16),
-    # 'enron':(16, 8, 64),
-    # 'mnist':(8, 8, 64),
+    'mnist':(8, 8, 64),
     # 'cifar': (8,8,64),
     # 'sun': (8, 8, 64),
     # 'trevi':(16, 8, 64),
     # 'notre':(8, 8, 16),
     # 'nuswide':(48, 10, 64),
+    # 'gist': (16, 8, 96),
+    # 'glove1.2m': (128, 8, 20),
+    # 'uqv':(16, 8, 16),
+    # 'enron':(16, 8, 64),
 }
 
-ef = 500
-M = 16
 
+ef = 500
 lsh_dim = 64
 
 if __name__ == '__main__':
@@ -159,12 +158,12 @@ if __name__ == '__main__':
         M = datasets_map[dataset][0]
         path = os.path.join(source, dataset)
 
-        projection_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_LSH_{lsh_dim}.fvecs')
-        b_dres_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_b_dres.fvecs')
-        sgn_dres_P_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_sgn_dres_P.ivecs')
-        c_2_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_c_2.fvecs')
-        c_P_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_c_P.fvecs')
-        start_idx_path = os.path.join(path, f'FINGER_{dataset}M{M}ef{ef}_start_idx.ivecs')
+        projection_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_LSH.fvecs')
+        b_dres_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_b_dres.fvecs')
+        sgn_dres_P_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_sgn_dres_P.ivecs')
+        c_2_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_c_2.fvecs')
+        c_P_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_c_P.fvecs')
+        start_idx_path = os.path.join(path, f'FINGER{lsh_dim}_{dataset}M{M}ef{ef}_start_idx.ivecs')
         index_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}.index')
 
         print(f"Loading data from {dataset}")
