@@ -10,19 +10,20 @@ import numpy as np
 from multiprocessing.dummy import Pool as ThreadPool
 
 source = './data/'
-datasets = ['gist']
+datasets = ['sift']
 
 
 
 def read_fvecs(filename, c_contiguous=True):
-    fv = np.fromfile(filename, dtype=np.float32)
+    # fv = np.fromfile(filename, dtype=np.float32)
+    fv = np.memmap(filename, dtype='float32', mode='r+')
     if fv.size == 0:
         return np.zeros((0, 0))
     dim = fv.view(np.int32)[0]
     assert dim > 0
     fv = fv.reshape(-1, 1 + dim)
-    if not all(fv.view(np.int32)[:, 0] == dim):
-        raise IOError("Non-uniform vector sizes in " + filename)
+    # if not all(fv.view(np.int32)[:, 0] == dim):
+    #     raise IOError("Non-uniform vector sizes in " + filename)
     fv = fv[:, 1:]
     if c_contiguous:
         fv = fv.copy()
@@ -139,6 +140,58 @@ def compute_GT_CPU(xb, xq, gt_sl):
     
     return data_ids, data_dis
 
+# buggy function
+def compute_GT_CPU_ip(xb, xq, gt_sl):
+    nq_gt, _ = xq.shape
+    print("compute GT CPU")
+    t0 = time.time()
+
+    gt_I = np.zeros((nq_gt, gt_sl), dtype='int64')
+    gt_D = np.zeros((nq_gt, gt_sl), dtype='float32')
+    heaps = faiss.float_maxheap_array_t()
+    heaps.k = gt_sl
+    heaps.nh = nq_gt
+    heaps.val = faiss.swig_ptr(gt_D)
+    heaps.ids = faiss.swig_ptr(gt_I)
+    heaps.heapify()
+    bs = 10 ** 5
+
+    n, d = xb.shape
+    xqs = sanitize(xq[:nq_gt])
+
+    # db_gt = faiss.IndexFlatL2(d)
+    db_gt = faiss.IndexFlatIP(d)
+
+    # compute ground-truth by blocks of bs, and add to heaps
+    for i0, xsl in dataset_iterator(xb, IdentPreproc(d), bs):
+        db_gt.add(xsl)
+        D, I = db_gt.search(xqs, gt_sl)
+        I += i0
+        heaps.addn_with_ids(
+            gt_sl, faiss.swig_ptr(D), faiss.swig_ptr(I), gt_sl)
+        db_gt.reset()
+    heaps.reorder()
+
+    print("GT CPU time: {} s".format(time.time() - t0))
+    
+    data_ids = []
+    data_dis = []
+    for i in range(len(gt_I)):
+        candidate = []   
+        dis_candidate = []
+        for j in range(gt_sl):
+            candidate.append(gt_I[i][j])
+            dis_candidate.append(gt_D[i][j])
+        data_ids.append(np.array(candidate))
+        data_dis.append(np.array(dis_candidate))
+        
+    data_ids = np.array(data_ids)
+    data_dis = np.array(data_dis)
+
+    
+    return data_ids, data_dis
+
+
 def read_ivecs(filename, c_contiguous=True):
     fv = np.fromfile(filename, dtype=np.int32)
     if fv.size == 0:
@@ -169,17 +222,17 @@ if __name__ == '__main__':
         
         # read data vectors
         print(f"Reading {dataset} from {query_path}.")
-        Q = read_fvecs(query_path)[:500]
+        Q = read_fvecs(query_path)
         QD = Q.shape[1]
         print(Q.shape)
         
-        K = 500
+        K = 100
         
         GT_I, GT_D = compute_GT_CPU(X, Q, K)
         print(GT_I.shape)
         
-        
-        
-        gt_path = os.path.join(path, f'{dataset}500_groundtruth.ivecs')
+        gt_path = os.path.join(path, f'{dataset}_groundtruth.ivecs')
+        gt_d_path = os.path.join(path, f'{dataset}_groundtruth_dist.fvecs')
                     
         to_ivecs(GT_I, gt_path)
+        to_fvecs(gt_d_path, GT_D)

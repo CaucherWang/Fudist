@@ -30,11 +30,11 @@ int main(int argc, char * argv[]) {
     int iarg = 0;
     opterr = 1;    //getopt error message (off: 0)
 
-    char index_path[256] = "";
-    char data_path[256] = "";
+    char index_path[256] = "../data/glove1.2m/glove1.2m_ef500_M32.index_test";
+    char data_path[256] = "../data/glove1.2m/glove1.2m_base.fvecs";
 
-    size_t efConstruction = 0;
-    size_t M = 0;
+    size_t efConstruction = 500;
+    size_t M = 32;
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "e:d:i:m:", longopts, &ind);
@@ -67,8 +67,12 @@ int main(int argc, char * argv[]) {
     size_t N = X->n;
     size_t report = 50000;
 
-    L2Space l2space(D);
-    HierarchicalNSW<float>* appr_alg = new HierarchicalNSW<float> (&l2space, N, M, efConstruction);
+    L2Space space(D);
+    cerr << "L2 space " << endl;
+    // InnerProductSpace space(D);
+    // cerr << "IP space222" << endl;
+    HierarchicalNSW<float>* appr_alg = new HierarchicalNSW<float> (&space, N, M, efConstruction);
+
 
     int curr = 0;
 #pragma omp parallel for

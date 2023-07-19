@@ -38,6 +38,10 @@ We have included detailed comments in these functions.
 using namespace std;
 
 namespace hnswlib {
+    #ifdef DEEP_QUERY
+        std::vector<int>indegrees_;
+    #endif
+
     typedef unsigned int tableint;
     typedef unsigned int linklistsizeint;
 
@@ -155,10 +159,21 @@ namespace hnswlib {
         std::default_random_engine level_generator_;
         std::default_random_engine update_probability_generator_;
 
+
         inline labeltype getExternalLabel(tableint internal_id) const {
             labeltype return_label;
             memcpy(&return_label,(data_level0_memory_ + internal_id * size_data_per_element_ + label_offset_), sizeof(labeltype));
             return return_label;
+        }
+
+        inline tableint getInternalId(labeltype label) const {
+            tableint label_c;
+            auto search = label_lookup_.find(label);
+            if (search == label_lookup_.end() || isMarkedDeleted(search->second)) {
+                throw std::runtime_error("Label not found");
+            }
+            label_c = search->second;
+            return label_c;
         }
 
         inline void setExternalLabel(tableint internal_id, labeltype label) const {
@@ -266,6 +281,128 @@ namespace hnswlib {
 
         mutable std::atomic<long> metric_distance_computations;
         mutable std::atomic<long> metric_hops;
+
+        template <bool has_deletions, bool collect_metrics=false>
+        std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>>
+        searchBaseLayerST_DEEP_QUERY(tableint ep_id, const void *data_point, size_t ef, size_t k) const {
+            VisitedList *vl = visited_list_pool_->getFreeVisitedList();
+            vl_type *visited_array = vl->mass;
+            vl_type visited_array_tag = vl->curV;
+
+            // top_candidates - the result set R
+            std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>> top_candidates, topk;
+            // candidate_set  - the search set S
+            std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> candidate_set;
+            std::unordered_map<tableint, tableint>parent_map;
+            parent_map[ep_id]  = ep_id;
+
+            dist_t lowerBound;
+            dist_t topk_dist;
+            // Insert the entry point to the result and search set with its exact distance as a key. 
+            if (!has_deletions || !isMarkedDeleted(ep_id)) {
+#ifdef COUNT_DIST_TIME
+                StopW stopw = StopW();
+#endif
+#ifndef ED2IP
+            dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+#else
+            dist_t dist = hnswlib::L2Sqr_by_IP(data_point, getDataByInternalId(ep_id), getExternalLabel(ep_id), dist_func_param_);
+#endif
+
+#ifdef COUNT_DIST_TIME
+                adsampling::distance_time += stopw.getElapsedTimeMicro();
+#endif          
+                adsampling::tot_dist_calculation++;
+                adsampling::tot_full_dist ++;
+                lowerBound = dist;
+                topk_dist = dist;
+                top_candidates.emplace(dist, ep_id);
+                topk.emplace(dist, ep_id);
+                candidate_set.emplace(-dist, ep_id);
+            } 
+            else {
+                lowerBound = std::numeric_limits<dist_t>::max();
+                candidate_set.emplace(-lowerBound, ep_id);
+            }
+
+            visited_array[ep_id] = visited_array_tag;
+            int cnt_visit = 0;
+            int cur_hop = 0;
+
+            cout << "#hop\tInd\t\tOutd\tDist2Q\tLB\t\tBSF\t\tparent\tDist2P\tid\t\tlabel" << endl;
+
+            // Iteratively generate candidates and conduct DCOs to maintain the result set R.
+            while (!candidate_set.empty()) {
+                std::pair<dist_t, tableint> current_node_pair = candidate_set.top();
+
+                // When the smallest object in S has its distance larger than the largest in R, terminate the algorithm.
+                if ((-current_node_pair.first) > lowerBound && (top_candidates.size() == ef || has_deletions == false)) {
+                    break;
+                }
+                candidate_set.pop();
+
+                // Fetch the smallest object in S. 
+                tableint current_node_id = current_node_pair.second;
+                int *data = (int *) get_linklist0(current_node_id);
+                size_t size = getListCount((linklistsizeint*)data);
+                if(collect_metrics){
+                    metric_hops++;
+                    metric_distance_computations+=size;
+                }
+                ++cur_hop;
+                cout << setprecision(4);
+                cout << cur_hop << "\t\t" << indegrees_[current_node_id] << "\t\t" << size << "    \t"
+                << -current_node_pair.first << "\t" << lowerBound << "\t" << topk_dist << "\t" 
+                << parent_map[current_node_id] << "\t"
+                << fstdistfunc_(getDataByInternalId(current_node_id), getDataByInternalId(parent_map[current_node_id]), dist_func_param_) << "\t"
+                << current_node_id << "\t" << getExternalLabel(current_node_id) << endl;
+
+                // Enumerate all the neighbors of the object and view them as candidates of KNNs. 
+                for (size_t j = 1; j <= size; j++) {
+                    int candidate_id = *(data + j);
+                    if (!(visited_array[candidate_id] == visited_array_tag)) {
+                        cnt_visit ++;
+                        visited_array[candidate_id] = visited_array_tag;
+
+                        // Conduct DCO with FDScanning wrt the N_ef th NN: 
+                        // (1) calculate its exact distance 
+                        // (2) compare it with the N_ef th distance (i.e., lowerBound)
+                        char *currObj1 = (getDataByInternalId(candidate_id));
+#ifdef COUNT_DIST_TIME
+                        StopW stopw = StopW();
+#endif
+#ifndef ED2IP
+            dist_t dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
+#else
+            dist_t dist = hnswlib::L2Sqr_by_IP(data_point, currObj1, getExternalLabel(candidate_id), dist_func_param_);
+#endif
+#ifdef COUNT_DIST_TIME
+                        adsampling::distance_time += stopw.getElapsedTimeMicro();
+#endif                  
+                        adsampling::tot_full_dist ++;
+                        if (top_candidates.size() < ef || lowerBound > dist) {                      
+                            candidate_set.emplace(-dist, candidate_id);
+                            parent_map[candidate_id] = current_node_id;
+                            if (!has_deletions || !isMarkedDeleted(candidate_id)){
+                                top_candidates.emplace(dist, candidate_id);
+                                topk.emplace(dist, candidate_id);
+                            }
+                            if (top_candidates.size() > ef)
+                                top_candidates.pop();
+                            if(topk.size() > k)
+                                topk.pop();
+                            if (!top_candidates.empty())
+                                lowerBound = top_candidates.top().first;
+                            if(!topk.empty())
+                                topk_dist = topk.top().first;
+                        }
+                    }
+                }
+            }
+            adsampling::tot_dist_calculation += cnt_visit;
+            visited_list_pool_->releaseVisitedList(vl);
+            return top_candidates;
+        }
 
         template <bool has_deletions, bool collect_metrics=false>
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>>
@@ -3338,6 +3475,17 @@ adsampling::tot_dimension+= adsampling::D;
             std::priority_queue<std::pair<dist_t, labeltype >> result;
             if (cur_element_count == 0) return result;
 
+#ifdef DEEP_QUERY
+    indegrees_.resize(cur_element_count, 0);    // internal id
+    for(int i = 0 ; i <cur_element_count; i++){
+        int *data = (int *) get_linklist0(getInternalId(i));
+        size_t size = getListCount((linklistsizeint*)data);
+        data = data + 1;
+        for(int j = 0; j < size; ++j){
+            indegrees_[data[j]]++;
+        }
+    }
+#endif
             tableint currObj = enterpoint_node_;
 #ifdef COUNT_DIST_TIME
             StopW stopw = StopW();
@@ -3352,240 +3500,241 @@ adsampling::tot_dimension+= adsampling::D;
 #endif
             adsampling::tot_dist_calculation ++;
             adsampling::tot_full_dist++;
-            for (int level = maxlevel_; level > 0; level--) {
+//             for (int level = maxlevel_; level > 0; level--) {
                 
-                bool changed = true;
-                while (changed) {
+//                 bool changed = true;
+//                 while (changed) {
                     
-                    changed = false;
-                    unsigned int *data;
+//                     changed = false;
+//                     unsigned int *data;
 
-                    data = (unsigned int *) get_linklist(currObj, level);
-                    int size = getListCount(data);
-                    metric_hops++;
-                    metric_distance_computations+=size;
+//                     data = (unsigned int *) get_linklist(currObj, level);
+//                     int size = getListCount(data);
+//                     metric_hops++;
+//                     metric_distance_computations+=size;
 
-                    tableint *datal = (tableint *) (data + 1);
-                    for (int i = 0; i < size; i++) {
-                        tableint cand = datal[i];
-                        if (cand < 0 || cand > max_elements_)
-                            throw std::runtime_error("cand error");
-                        adsampling::tot_dist_calculation ++;
-                        if(adaptive == 1 || adaptive == 2){
-#ifdef COUNT_DIST_TIME
-                            StopW stopw = StopW();
-#endif
-                            dist_t d = adsampling::dist_comp(curdist, getDataByInternalId(cand), query_data, 0, 0);
-#ifdef COUNT_DIST_TIME
-                            adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif
-                            if(d > 0){
-                                adsampling::tot_full_dist++;
-                                if(d< curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        } else if(adaptive == 20){
-#ifdef COUNT_DIST_TIME
-                            StopW stopw = StopW();
-#endif
-                            dist_t d = adsampling::dist_comp_keep(curdist, getExternalLabel(cand));
-#ifdef COUNT_DIST_TIME
-                            adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif
-                            if(d > 0){
-                                adsampling::tot_full_dist++;
-                                if(d < curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        }else if (adaptive == 3){       //deprecated
-                            dist_t d = paa::dist_comp(curdist, getExternalLabel(cand));
+//                     tableint *datal = (tableint *) (data + 1);
+//                     for (int i = 0; i < size; i++) {
+//                         tableint cand = datal[i];
+//                         if (cand < 0 || cand > max_elements_)
+//                             throw std::runtime_error("cand error");
+//                         adsampling::tot_dist_calculation ++;
+//                         if(adaptive == 1 || adaptive == 2){
+// #ifdef COUNT_DIST_TIME
+//                             StopW stopw = StopW();
+// #endif
+//                             dist_t d = adsampling::dist_comp(curdist, getDataByInternalId(cand), query_data, 0, 0);
+// #ifdef COUNT_DIST_TIME
+//                             adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist++;
+//                                 if(d< curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         } else if(adaptive == 20){
+// #ifdef COUNT_DIST_TIME
+//                             StopW stopw = StopW();
+// #endif
+//                             dist_t d = adsampling::dist_comp_keep(curdist, getExternalLabel(cand));
+// #ifdef COUNT_DIST_TIME
+//                             adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist++;
+//                                 if(d < curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         }else if (adaptive == 3){       //deprecated
+//                             dist_t d = paa::dist_comp(curdist, getExternalLabel(cand));
 
-                            if(d > 0){
-                                adsampling::tot_full_dist ++;
-                                d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
-                                if(d < curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        } else if (adaptive == 4){
-                            adsampling::tot_approx_dist++;
-#ifdef COUNT_DIST_TIME
-StopW stopw = StopW();
-#endif
-                            dist_t d = lsh::dist_comp(curdist, getExternalLabel(cand));
-#ifdef COUNT_DIST_TIME
-adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
-#endif                  
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist ++;
+//                                 d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+//                                 if(d < curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         } else if (adaptive == 4){
+//                             adsampling::tot_approx_dist++;
+// #ifdef COUNT_DIST_TIME
+// StopW stopw = StopW();
+// #endif
+//                             dist_t d = lsh::dist_comp(curdist, getExternalLabel(cand));
+// #ifdef COUNT_DIST_TIME
+// adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
+// #endif                  
 
-                            if(d > 0){
-                                adsampling::tot_full_dist ++;
-#ifdef COUNT_DIST_TIME
-StopW stopw = StopW();
-#endif
-#ifndef ED2IP
-            d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
-#else
-            d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
-#endif
-#ifdef COUNT_DIST_TIME
-adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif                  
-#ifdef COUNT_DIMENSION
-adsampling::tot_dimension+= lsh::D;
-#endif
-                                if(d < curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        } else if(adaptive == 50 || adaptive == 80){
-#ifdef COUNT_DIST_TIME
-                            StopW stopw = StopW();
-#endif
-                            dist_t d = svd::dist_comp(curdist, getExternalLabel(cand));
-#ifdef COUNT_DIST_TIME
-                            adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif
-                            if(d > 0){
-                                adsampling::tot_full_dist++;
-                                if(d < curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        } else if(adaptive == 5 || adaptive == 8 || adaptive == 81){
-#ifdef COUNT_DIST_TIME
-                            StopW stopw = StopW();
-#endif
-                            dist_t d = svd::dist_comp2(curdist, getDataByInternalId(cand), query_data);
-#ifdef COUNT_DIST_TIME
-                            adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif
-                            if(d > 0){
-                                adsampling::tot_full_dist++;
-                                if(d < curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        } else if (adaptive == 6 || adaptive == 7 || adaptive == 61 || adaptive == 71 || adaptive == 62 || adaptive == 72){
-                            adsampling::tot_approx_dist++;
-#ifdef COUNT_DIST_TIME
-StopW stopw = StopW();
-#endif
-                            dist_t d = pq::dist_comp(curdist, getExternalLabel(cand));
-#ifdef COUNT_DIST_TIME
-adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
-#endif
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist ++;
+// #ifdef COUNT_DIST_TIME
+// StopW stopw = StopW();
+// #endif
+// #ifndef ED2IP
+//             d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+// #else
+//             d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
+// #endif
+// #ifdef COUNT_DIST_TIME
+// adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif                  
+// #ifdef COUNT_DIMENSION
+// adsampling::tot_dimension+= lsh::D;
+// #endif
+//                                 if(d < curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         } else if(adaptive == 50 || adaptive == 80){
+// #ifdef COUNT_DIST_TIME
+//                             StopW stopw = StopW();
+// #endif
+//                             dist_t d = svd::dist_comp(curdist, getExternalLabel(cand));
+// #ifdef COUNT_DIST_TIME
+//                             adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist++;
+//                                 if(d < curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         } else if(adaptive == 5 || adaptive == 8 || adaptive == 81){
+// #ifdef COUNT_DIST_TIME
+//                             StopW stopw = StopW();
+// #endif
+//                             dist_t d = svd::dist_comp2(curdist, getDataByInternalId(cand), query_data);
+// #ifdef COUNT_DIST_TIME
+//                             adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist++;
+//                                 if(d < curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         } else if (adaptive == 6 || adaptive == 7 || adaptive == 61 || adaptive == 71 || adaptive == 62 || adaptive == 72){
+//                             adsampling::tot_approx_dist++;
+// #ifdef COUNT_DIST_TIME
+// StopW stopw = StopW();
+// #endif
+//                             dist_t d = pq::dist_comp(curdist, getExternalLabel(cand));
+// #ifdef COUNT_DIST_TIME
+// adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
+// #endif
 
-                            if(d > 0){
-                                adsampling::tot_full_dist ++;
-#ifdef COUNT_DIST_TIME
-StopW stopw = StopW();
-#endif
-#ifndef ED2IP
-            d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
-#else
-            d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
-#endif
-#ifdef COUNT_DIST_TIME
-adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif
-#ifdef COUNT_DIMENSION
-adsampling::tot_dimension+= pq::D;
-#endif
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist ++;
+// #ifdef COUNT_DIST_TIME
+// StopW stopw = StopW();
+// #endif
+// #ifndef ED2IP
+//             d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+// #else
+//             d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
+// #endif
+// #ifdef COUNT_DIST_TIME
+// adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif
+// #ifdef COUNT_DIMENSION
+// adsampling::tot_dimension+= pq::D;
+// #endif
 
-                                if(d < curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        } else if(adaptive == 9){
-#ifdef COUNT_DIST_TIME
-                            StopW stopw = StopW();
-#endif
-                            dist_t d = dwt::dist_comp_deltad(curdist, getDataByInternalId(cand), query_data);
-#ifdef COUNT_DIST_TIME
-                            adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif
-                            if(d > 0){
-                                adsampling::tot_full_dist++;
-                                if(d < curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        } else if (adaptive == 11){
-                            adsampling::tot_approx_dist++;
-#ifdef COUNT_DIST_TIME
-StopW stopw = StopW();
-#endif
-                            dist_t d = seanet::dist_comp(curdist, getExternalLabel(cand));
-#ifdef COUNT_DIST_TIME
-adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
-#endif                  
+//                                 if(d < curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         } else if(adaptive == 9){
+// #ifdef COUNT_DIST_TIME
+//                             StopW stopw = StopW();
+// #endif
+//                             dist_t d = dwt::dist_comp_deltad(curdist, getDataByInternalId(cand), query_data);
+// #ifdef COUNT_DIST_TIME
+//                             adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist++;
+//                                 if(d < curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         } else if (adaptive == 11){
+//                             adsampling::tot_approx_dist++;
+// #ifdef COUNT_DIST_TIME
+// StopW stopw = StopW();
+// #endif
+//                             dist_t d = seanet::dist_comp(curdist, getExternalLabel(cand));
+// #ifdef COUNT_DIST_TIME
+// adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
+// #endif                  
 
-                            if(d > 0){
-                                adsampling::tot_full_dist ++;
-#ifdef COUNT_DIST_TIME
-StopW stopw = StopW();
-#endif
-#ifndef ED2IP
-            d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
-#else
-            d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
-#endif
-#ifdef COUNT_DIST_TIME
-adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif                  
-#ifdef COUNT_DIMENSION
-adsampling::tot_dimension+= seanet::D;
-#endif
-                                if(d < curdist){
-                                    curdist = d;
-                                    currObj = cand;
-                                    changed = true;
-                                }
-                            }
-                        } else {
-#ifdef COUNT_DIST_TIME
-                            StopW stopw = StopW();
-#endif
-#ifndef ED2IP
-            dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
-#else
-            dist_t d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
-#endif
-#ifdef COUNT_DIST_TIME
-                            adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif
-#ifdef COUNT_DIMENSION
-                            if (adaptive == 10)
-                                adsampling::tot_dimension+= finger::D;
-#endif
-                            adsampling::tot_full_dist ++;
-                            if (d < curdist) {
-                                curdist = d;
-                                currObj = cand;
-                                changed = true;
-                            }
-                        }
-                    }
-                }
-            }
+//                             if(d > 0){
+//                                 adsampling::tot_full_dist ++;
+// #ifdef COUNT_DIST_TIME
+// StopW stopw = StopW();
+// #endif
+// #ifndef ED2IP
+//             d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+// #else
+//             d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
+// #endif
+// #ifdef COUNT_DIST_TIME
+// adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif                  
+// #ifdef COUNT_DIMENSION
+// adsampling::tot_dimension+= seanet::D;
+// #endif
+//                                 if(d < curdist){
+//                                     curdist = d;
+//                                     currObj = cand;
+//                                     changed = true;
+//                                 }
+//                             }
+//                         } else {
+// #ifdef COUNT_DIST_TIME
+//                             StopW stopw = StopW();
+// #endif
+// #ifndef ED2IP
+//             dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+// #else
+//             dist_t d = hnswlib::L2Sqr_by_IP(query_data, getDataByInternalId(cand), getExternalLabel(cand), dist_func_param_);
+// #endif
+// #ifdef COUNT_DIST_TIME
+//                             adsampling::distance_time += stopw.getElapsedTimeMicro();
+// #endif
+// #ifdef COUNT_DIMENSION
+//                             if (adaptive == 10)
+//                                 adsampling::tot_dimension+= finger::D;
+// #endif
+//                             adsampling::tot_full_dist ++;
+//                             if (d < curdist) {
+//                                 curdist = d;
+//                                 currObj = cand;
+//                                 changed = true;
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+            
             //max heap
             std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>> top_candidates;
             
@@ -3611,7 +3760,12 @@ adsampling::tot_dimension+= seanet::D;
                 else if(adaptive == 9) top_candidates=searchBaseLayerDWT<false,true>(currObj, query_data, std::max(ef_, k));
                 else if(adaptive == 10) top_candidates=searchBaseLayerFINGER<false,true>(currObj, query_data, std::max(ef_, k));
                 else if(adaptive == 11) top_candidates=searchBaseLayerSEANET<false,true>(currObj, query_data, std::max(ef_, k));
-                else top_candidates=searchBaseLayerST<false,true>(currObj, query_data, std::max(ef_, k));
+                else 
+                #ifndef DEEP_QUERY
+                top_candidates=searchBaseLayerST<false,true>(currObj, query_data, std::max(ef_, k));
+                #else
+                top_candidates=searchBaseLayerST_DEEP_QUERY<false,true>(currObj, query_data, std::max(ef_, k), k);
+                #endif
             }
 
             //cerr << "search baselayer succeed!" << endl;
@@ -3658,6 +3812,27 @@ adsampling::tot_dimension+= seanet::D;
             }
             std::cout << "integrity ok, checked " << connections_checked << " connections\n";
 
+        }
+
+        void getDegrees(vector<int>& out_degree, vector<int>&in_degree){
+            for(int i = 0;i < cur_element_count; i++){
+                int *data = (int *) get_linklist0(i);
+                size_t size = getListCount((linklistsizeint*)data);
+                out_degree[i] = size;
+                for(int j = 1; j <= size; ++j)
+                    in_degree[data[j]]++;
+            }
+        }
+
+        void printGraph(){
+            for(int i = 0;i < cur_element_count; i++){
+                int *data = (int *) get_linklist0(i);
+                size_t size = getListCount((linklistsizeint*)data);
+                cout << i << ": ";
+                for(int j = 1; j <= size; ++j)
+                    cout << data[j] << ",";
+                cout << endl;       
+            }
         }
 
     };

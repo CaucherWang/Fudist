@@ -352,72 +352,72 @@ namespace hnswlib {
         size_t dim_;
     public:
         InnerProductSpace(size_t dim) {
-            fstdistfunc_ = InnerProduct;
+            // fstdistfunc_ = InnerProduct;
 
-    // fstdistfunc_ = InnerProductDistance;
+    fstdistfunc_ = InnerProductDistance;
 
 #ifdef USE_SIMD
+//     #if defined(USE_AVX) || defined(USE_SSE) || defined(USE_AVX512)
+//         #if defined(USE_AVX512)
+//             if (AVX512Capable()) {
+//                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX512;
+//             } else if (AVXCapable()) {
+//                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
+//             }
+//         #elif defined(USE_AVX)
+//             if (AVXCapable()) {
+//                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
+//             }
+//         #endif
+//         #if defined(USE_AVX)
+//             if (AVXCapable()) {
+//                 InnerProductSIMD4Ext = InnerProductSIMD4ExtAVX;
+//             }
+//         #endif
+
+//             if (dim % 16 == 0)
+//                 fstdistfunc_ = InnerProductSIMD16Ext;
+//             else if (dim % 4 == 0)
+//                 fstdistfunc_ = InnerProductSIMD4Ext;
+//             else if (dim > 16)
+//                 fstdistfunc_ = InnerProductSIMD16ExtResiduals;
+//             else if (dim > 4)
+//                 fstdistfunc_ = InnerProductSIMD4ExtResiduals;
+//     #endif
+
     #if defined(USE_AVX) || defined(USE_SSE) || defined(USE_AVX512)
         #if defined(USE_AVX512)
             if (AVX512Capable()) {
                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX512;
+                InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX512;
             } else if (AVXCapable()) {
                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
+                InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX;
             }
         #elif defined(USE_AVX)
             if (AVXCapable()) {
                 InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
+                InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX;
             }
         #endif
         #if defined(USE_AVX)
             if (AVXCapable()) {
                 InnerProductSIMD4Ext = InnerProductSIMD4ExtAVX;
+                InnerProductDistanceSIMD4Ext = InnerProductDistanceSIMD4ExtAVX;
             }
         #endif
 
             if (dim % 16 == 0)
-                fstdistfunc_ = InnerProductSIMD16Ext;
+                fstdistfunc_ = InnerProductDistanceSIMD16Ext;
             else if (dim % 4 == 0)
-                fstdistfunc_ = InnerProductSIMD4Ext;
+                fstdistfunc_ = InnerProductDistanceSIMD4Ext;
             else if (dim > 16)
-                fstdistfunc_ = InnerProductSIMD16ExtResiduals;
+                fstdistfunc_ = InnerProductDistanceSIMD16ExtResiduals;
             else if (dim > 4)
-                fstdistfunc_ = InnerProductSIMD4ExtResiduals;
+                fstdistfunc_ = InnerProductDistanceSIMD4ExtResiduals;
     #endif
-
-
-    // #if defined(USE_AVX) || defined(USE_SSE) || defined(USE_AVX512)
-    //     #if defined(USE_AVX512)
-    //         if (AVX512Capable()) {
-    //             InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX512;
-    //             InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX512;
-    //         } else if (AVXCapable()) {
-    //             InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
-    //             InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX;
-    //         }
-    //     #elif defined(USE_AVX)
-    //         if (AVXCapable()) {
-    //             InnerProductSIMD16Ext = InnerProductSIMD16ExtAVX;
-    //             InnerProductDistanceSIMD16Ext = InnerProductDistanceSIMD16ExtAVX;
-    //         }
-    //     #endif
-    //     #if defined(USE_AVX)
-    //         if (AVXCapable()) {
-    //             InnerProductSIMD4Ext = InnerProductSIMD4ExtAVX;
-    //             InnerProductDistanceSIMD4Ext = InnerProductDistanceSIMD4ExtAVX;
-    //         }
-    //     #endif
-
-    //         if (dim % 16 == 0)
-    //             fstdistfunc_ = InnerProductDistanceSIMD16Ext;
-    //         else if (dim % 4 == 0)
-    //             fstdistfunc_ = InnerProductDistanceSIMD4Ext;
-    //         else if (dim > 16)
-    //             fstdistfunc_ = InnerProductDistanceSIMD16ExtResiduals;
-    //         else if (dim > 4)
-    //             fstdistfunc_ = InnerProductDistanceSIMD4ExtResiduals;
-    // #endif
 #endif
+
             dim_ = dim;
             data_size_ = dim * sizeof(float);
         }
