@@ -39,7 +39,6 @@ public:
     size_t C;
     size_t d; // the dimensionality of first a few dimensions
 
-
     float* L1_data;
     // float* res_data;
     float* centroids;
