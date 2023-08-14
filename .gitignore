@@ -26,5 +26,7 @@ data/SEANet_data
 results/
 src/index_hnsw
 src/search_hnsw
+src/index_ivf
+src/search_ivf
 prof/
 figures/fig

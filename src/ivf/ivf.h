@@ -17,10 +17,20 @@ We explain the important variables for the enhanced IVF as follows.
 #include <algorithm>
 #include <map>
 
-#include "adsampling.h"
 #include "matrix.h"
 #include "utils.h"
+#include "./hnswlib/hnswlib.h"
+#include "adsampling.h"
+#include "lsh.h"
+#include "paa.h"
+#include "dwt.h"
+#include "finger.h"
+#include "seanet.h"
+#include "svd.h"
+#include "pq.h"
 
+using namespace std;
+using namespace hnswlib;
 
 class IVF{
 public:
@@ -29,19 +39,22 @@ public:
     size_t C;
     size_t d; // the dimensionality of first a few dimensions
 
+
     float* L1_data;
-    float* res_data;
+    // float* res_data;
     float* centroids;
 
     size_t* start;
     size_t* len;
     size_t* id;
 
+    
+
     IVF();
-    IVF(const Matrix<float> &X, const Matrix<float> &_centroids, int adaptive=0);
+    IVF(const Matrix<float> &X, const Matrix<float> &_centroids);
     ~IVF();
 
-    ResultHeap search(float* query, size_t k, size_t nprobe, float distK = std::numeric_limits<float>::max()) const;
+    ResultHeap search(float* query, size_t k, size_t nprobe, float distK = std::numeric_limits<float>::max(), int randomize=0) const;
     void save(char* filename);
     void load(char* filename);
 
@@ -50,14 +63,18 @@ public:
 IVF::IVF(){
     N = D = C = d = 0;
     start = len = id = NULL;
-    L1_data = res_data = centroids = NULL;
+    // L1_data = res_data = centroids = NULL;
+    L1_data = centroids = NULL;
 }
 
-IVF::IVF(const Matrix<float> &X, const Matrix<float> &_centroids, int adaptive){
-    
+IVF::IVF(const Matrix<float> &X, const Matrix<float> &_centroids){
     N = X.n;
     D = X.d;
     C = _centroids.n;
+
+    L2Space s(D);
+    DISTFUNC<float> fstdistfunc_ = s.get_dist_func();
+    void *dist_func_param_ = s.get_dist_func_param();
     
     assert(D > 32);
     start = new size_t [C];
@@ -68,9 +85,12 @@ IVF::IVF(const Matrix<float> &X, const Matrix<float> &_centroids, int adaptive){
     
     for(int i=0;i<X.n;i++){
         int belong = 0;
-        float dist_min = X.dist(i, _centroids, 0);
+        // float dist_min = X.dist(i, _centroids, 0);
+        float dist_min = fstdistfunc_(X.data + i * D, _centroids.data, dist_func_param_);
+        // float dist_min = X.dist(i, _centroids, 0);
         for(int j=1;j<C;j++){
-            float dist = X.dist(i, _centroids, j);
+            float dist = fstdistfunc_(X.data + i * D, _centroids.data + j * D, dist_func_param_);
+            // float dist = X.dist(i, _centroids, j);
             if(dist < dist_min){
                 dist_min = dist;
                 belong = j;
@@ -93,19 +113,25 @@ IVF::IVF(const Matrix<float> &X, const Matrix<float> &_centroids, int adaptive){
         }
     }
 
-    if(adaptive == 1)d = 32;        // IVF++ - optimize cache (d = 32 by default)
-    else if(adaptive == 0) d = D;   // IVF   - plain scan
-    else d = 0;                     // IVF+  - plain ADSampling        
+    
 
-    L1_data   = new float [N * d + 1];
-    res_data  = new float [N * (D - d) + 1];
+    // if(adaptive == 1)d = 32;        // IVF++ - optimize cache (d = 32 by default)
+    // else if(adaptive == 0) d = D;   // IVF   - plain scan
+    // else d = 0;                     // IVF+  - plain ADSampling 
+    
+    // Store all data in L1_data.
+    d = D;       
+
+    L1_data   = new float [N * D + 1];
+    // res_data  = new float [N * (D - d) + 1];
     centroids = new float [C * D];
     
     for(int i=0;i<N;i++){
         int x = id[i];
         for(int j=0;j<D;j++){
-            if(j < d) L1_data[i * d + j] = X.data[x * D + j];
-            else res_data[i * (D-d) + j - d] = X.data[x * D + j];
+            // if(j < d) L1_data[i * d + j] = X.data[x * D + j];
+            // else res_data[i * (D-d) + j - d] = X.data[x * D + j];
+            L1_data[i * d + j] = X.data[x * D + j];
         }
     }
 
@@ -119,11 +145,17 @@ IVF::~IVF(){
     if(len != NULL)delete [] len;
     if(start != NULL)delete [] start;
     if(L1_data != NULL)delete [] L1_data;
-    if(res_data != NULL)delete [] res_data;
+    // if(res_data != NULL)delete [] res_data;
     if(centroids != NULL)delete [] centroids;
 }
 
-ResultHeap IVF::search(float* query, size_t k, size_t nprobe, float distK) const{
+ResultHeap IVF::search(float* query, size_t k, size_t nprobe, float distK, int randomize) const{
+    L2Space l2space(D);
+    DISTFUNC<float> fstdistfunc_ = l2space.get_dist_func();
+    void *dist_func_param_ = l2space.get_dist_func_param();
+
+    ResultHeap KNNs;
+
     // the default value of distK is +inf 
     Result* centroid_dist = new Result [C];
 
@@ -132,7 +164,8 @@ ResultHeap IVF::search(float* query, size_t k, size_t nprobe, float distK) const
 #ifdef COUNT_DIST_TIME
         StopW stopw = StopW();
 #endif
-        centroid_dist[i].first = sqr_dist(query, centroids+i*D, D);
+        // centroid_dist[i].first = sqr_dist(query, centroids+i*D, D);
+        centroid_dist[i].first = fstdistfunc_(query, centroids+i*D, dist_func_param_);
 #ifdef COUNT_DIST_TIME
         adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif               
@@ -154,41 +187,9 @@ ResultHeap IVF::search(float* query, size_t k, size_t nprobe, float distK) const
     // For IVF (i.e., apply FDScanning), it should be D. 
     // For IVF+ (i.e., apply ADSampling without optimizing data layout), it should be 0.
     // For IVF++ (i.e., apply ADSampling with optimizing data layout), it should be delta_d (i.e., 32). 
-    int cur = 0;
-    for(int i=0;i<nprobe;i++){
-        int cluster_id = centroid_dist[i].second;
-        for(int j=0;j<len[cluster_id];j++){
-            size_t can = start[cluster_id] + j;
-#ifdef COUNT_DIST_TIME
-            StopW stopw = StopW();
-#endif
-            float tmp_dist = sqr_dist(query, L1_data + can * d, d);
-#ifdef COUNT_DIST_TIME
-            adsampling::distance_time += stopw.getElapsedTimeMicro();
-#endif      
-            if(d > 0)dist[cur] = tmp_dist;
-            else dist[cur] = 0;
-            obj[cur] = can;
-            cur ++;
-        }    
-    }
-    ResultHeap KNNs;
 
-    // d == D indicates FDScanning. 
-    if(d == D){ 
-        for(int i=0;i<ncan;i++){
-            candidates[i].first = dist[i];
-            candidates[i].second = id[obj[i]];
-        }
-        std::partial_sort(candidates, candidates + k, candidates + ncan);
-        
-        for(int i=0;i<k;i++){
-            KNNs.emplace(candidates[i].first, candidates[i].second);
-        }
-    }
-    // d < D indicates ADSampling with and without cache-level optimization
-    if(d < D){
-        auto cur_dist = dist;
+    if(randomize == 0){ // naive IVF
+        int cur = 0;
         for(int i=0;i<nprobe;i++){
             int cluster_id = centroid_dist[i].second;
             for(int j=0;j<len[cluster_id];j++){
@@ -196,18 +197,59 @@ ResultHeap IVF::search(float* query, size_t k, size_t nprobe, float distK) const
 #ifdef COUNT_DIST_TIME
                 StopW stopw = StopW();
 #endif
-                float tmp_dist = adsampling::dist_comp(distK, res_data + can * (D-d), query + d, *cur_dist, d);
+                // float tmp_dist = sqr_dist(query, L1_data + can * d, d);
+                float tmp_dist = fstdistfunc_(query, L1_data + can * D, dist_func_param_);
 #ifdef COUNT_DIST_TIME
                 adsampling::distance_time += stopw.getElapsedTimeMicro();
+#endif
+#ifdef COUNT_DIMENSION
+adsampling::tot_dimension+= adsampling::D;
+#endif
+                adsampling::tot_dist_calculation++;
+                adsampling::tot_full_dist ++;
+                dist[cur] = tmp_dist;
+                obj[cur] = can;
+                cur ++;
+            }    
+        }
+
+        for(int i=0;i<ncan;i++){
+            candidates[i].first = dist[i];
+            candidates[i].second = id[obj[i]];
+        }
+        std::partial_sort(candidates, candidates + k, candidates + ncan);
+        for(int i=0;i<k;i++){
+            KNNs.emplace(candidates[i].first, candidates[i].second);
+        }
+
+    } else if (randomize == 1) { // IVF + ADSampling
+        for(int i=0;i<nprobe;i++){
+            int cluster_id = centroid_dist[i].second;
+            for(int j=0;j<len[cluster_id];j++){
+                size_t can = start[cluster_id] + j;
+#ifdef COUNT_DIST_TIME
+                StopW stopw = StopW();
+#endif
+                float tmp_dist = adsampling::dist_comp(distK, L1_data + can * D, query, 0, 0);
+#ifdef COUNT_DIST_TIME
+                adsampling::approx_dist_time += stopw.getElapsedTimeMicro();
 #endif                     
+                adsampling::tot_approx_dist++;
+                adsampling::tot_dist_calculation++;
                 if(tmp_dist > 0){
                     KNNs.emplace(tmp_dist, id[can]);
                     if(KNNs.size() > k) KNNs.pop();
                 }
+#ifdef COUNT_FN
+                else{
+                    dist_t real_dist = fstdistfunc_(query, L1_data + can * D, dist_func_param_);
+                    if(real_dist < lowerBound)
+                        adsampling::tot_fn++;
+                }
+#endif
                 if(KNNs.size() == k && KNNs.top().first < distK){
                     distK = KNNs.top().first;
                 }
-                cur_dist++;
             }
         }
     }
@@ -229,7 +271,7 @@ void IVF::save(char * filename){
     output.write((char *) &d, sizeof(size_t));
 
     if(d > 0)output.write((char *) L1_data,  N * d       * sizeof(float));
-    if(d < D)output.write((char *) res_data, N * (D - d) * sizeof(float));
+    // if(d < D)output.write((char *) res_data, N * (D - d) * sizeof(float));
     output.write((char *) centroids, C * D * sizeof(float));
 
     output.write((char *) start, C * sizeof(size_t));
@@ -253,7 +295,7 @@ void IVF::load(char * filename){
     cerr << N << " " << D << " " << C << " " << d << endl;
 
     L1_data   = new float [N * d + 10];
-    res_data  = new float [N * (D - d) + 10];
+    // res_data  = new float [N * (D - d) + 10];
     centroids = new float [C * D];
     
     start = new size_t [C];
@@ -261,7 +303,7 @@ void IVF::load(char * filename){
     id    = new size_t [N];
 
     if(d > 0)input.read((char *) L1_data,  N * d       * sizeof(float));
-    if(d < D)input.read((char *) res_data, N * (D - d) * sizeof(float));
+    // if(d < D)input.read((char *) res_data, N * (D - d) * sizeof(float));
     input.read((char *) centroids, C * D * sizeof(float));
 
     input.read((char *) start, C * sizeof(size_t));
