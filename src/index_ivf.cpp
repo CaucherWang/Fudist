@@ -65,7 +65,7 @@ int main(int argc, char * argv[]) {
     Matrix<float> X(data_path);
     Matrix<float> C(centroid_path);
 
-    IVF ivf(X, C, adaptive);
+    IVF ivf(X, C);
     ivf.save(index_path);
 
     return 0;
