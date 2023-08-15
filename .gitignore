@@ -24,6 +24,7 @@ data/rand*
 data/SEANet_data
 *.pkl
 results/
+results_ivf/
 src/index_hnsw
 src/search_hnsw
 src/index_ivf

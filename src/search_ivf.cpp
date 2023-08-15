@@ -7,6 +7,7 @@
 #define EIGEN_DONT_VECTORIZE
 #endif
 
+
 #include <iostream>
 #include <fstream>
 
@@ -228,14 +229,14 @@ int main(int argc, char * argv[]) {
     int iarg = 0;
     opterr = 1;    //getopt error message (off: 0)
 
-    char index_path[256] = "";
-    char query_path[256] = "";
-    char groundtruth_path[256] = "";
-    char result_path[256] = "";
-    char dataset[256] = "";
-    char transformation_path[256] = "";
+    // char index_path[256] = "";
+    // char query_path[256] = "";
+    // char groundtruth_path[256] = "";
+    // char result_path[256] = "";
+    // char dataset[256] = "";
+    // char transformation_path[256] = "";
 
-    int randomize = 0;
+    int randomize = 1;
     string data_str = "gist";
     string cn_str = "4096";
 
@@ -335,7 +336,7 @@ int main(int argc, char * argv[]) {
     // }
 
     // default settings
-    string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_cn" + cn_str + ".index";
+    string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ivf_cn" + cn_str + ".index";
     string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
     string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs";
     string result_path_str = result_base_path_str + "/" + data_str + "/" + result_prefix_str + data_str + "_cn" + cn_str + "_" + exp_name + ".log";
@@ -350,7 +351,7 @@ int main(int argc, char * argv[]) {
     strcpy(result_path, result_path_str.c_str());
 
     // adsampling
-    string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_cn" + cn_str + ".index";
+    string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ivf_cn" + cn_str + ".index";
     string trans_path_str = base_path_str + "/" + data_str + "/O.fvecs";
 
     char ads_index_path[256] = "";
