@@ -34,6 +34,7 @@ ads = {}
 pca = {}
 pq = {}
 opq = {}
+dwt = {}
 lsh = {}
 finger = {}
 
@@ -60,7 +61,7 @@ datsets_map = {
 }
 
 source = './results/'
-dataset = 'ukbench'
+dataset = 'mnist'
 ef = 500
 M = datsets_map[dataset][0]
 pq_m = datsets_map[dataset][1]
@@ -79,15 +80,15 @@ seanet_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}_SEANet.log')
 
 hnsw = resolve_log(hnsw_path)
 ads = resolve_log(ads_path)
-lsh = resolve_log(lsh_path)
+# lsh = resolve_log(lsh_path)
 pca = resolve_log(pca_path)
 # pq = resolve_log(pq_path)
-opq = resolve_log(opq_path)
+# opq = resolve_log(opq_path)
 
-finger = resolve_log(finger_path)
+# finger = resolve_log(finger_path)
 # seanet = resolve_log(seanet_path)
 
-dwt = resolve_log(dwt_path)
+# dwt = resolve_log(dwt_path)
 # for i in range(len(dwt[0])):
 #     dwt[1][i] = dwt[1][i] + 0.1
 
@@ -106,10 +107,10 @@ mark_size_offset = 3
 
 plot_info = [
     # [seanet[1][:], seanet[0][:], {'marker':'v', 'label':'SEANet', 'markersize':3+mark_size_offset, 'linewidth':width, 'color':'darkgreen', 'alpha':0.9}],
-    [finger[1][:], finger[0][:], {'marker':'s', 'label':'FINGER', 'markersize':3+mark_size_offset, 'linewidth':width, 'color':'darkorange', 'alpha':0.9}],
-    [opq[1][:], opq[0][:], {'marker':'D', 'label':'OPQ', 'markersize':3+mark_size_offset, 'linewidth':width, 'color':'steelblue', 'alpha':0.9}],
-    [dwt[1], dwt[0], {'marker':'x', 'label':'DWT', 'markersize':4+mark_size_offset, 'linewidth':width, 'color':'darkgray'}],
-    [lsh[1][:], lsh[0][:], {'marker':'+', 'label':'LSH', 'markersize':7+mark_size_offset, 'linewidth':width, 'color':'olive'}],
+    # [finger[1][:], finger[0][:], {'marker':'s', 'label':'FINGER', 'markersize':3+mark_size_offset, 'linewidth':width, 'color':'darkorange', 'alpha':0.9}],
+    # [opq[1][:], opq[0][:], {'marker':'D', 'label':'OPQ', 'markersize':3+mark_size_offset, 'linewidth':width, 'color':'steelblue', 'alpha':0.9}],
+    # [dwt[1], dwt[0], {'marker':'x', 'label':'DWT', 'markersize':4+mark_size_offset, 'linewidth':width, 'color':'darkgray'}],
+    # [lsh[1][:], lsh[0][:], {'marker':'+', 'label':'LSH', 'markersize':7+mark_size_offset, 'linewidth':width, 'color':'olive'}],
     [pca[1][:], pca[0][:], {'marker':'*', 'label':'PCA', 'markersize':7+mark_size_offset, 'linewidth':width, 'color':'indianred', 'alpha':0.9}],
     [ads[1][:], ads[0][:], {'marker':'o', 'label':'ADS', 'markersize':4+mark_size_offset, 'linewidth':width, 'color':'firebrick', 'alpha':1}],
     [hnsw[1][:], hnsw[0][:], {'marker':'d', 'label':'HNSW', 'markersize':5+mark_size_offset, 'linewidth':width, 'color':'mediumpurple', 'alpha':0.9}]
@@ -153,46 +154,6 @@ if dataset not in ticks:
 else:
     plt.xticks(ticks[dataset][0], fontsize=24)
     plt.yticks(ticks[dataset][1], fontsize=22)
-# deep
-# plt.xticks([0.5,1.0,1.5,2.0], fontsize=24)
-# plt.yticks([92,94,96,98,100], fontsize=22)
-
-# legend_order_deep = ["PCA", "HNSW", "OPQ", "ADS", "DWT", "LSH", "FINGER", "SEANet"]
-
-# word2vec
-# plt.xticks([5,15,25,35],fontsize=24)
-# plt.yticks([80,84,88,92,96],fontsize=22)
-
-
-# imagenet
-# plt.xticks([5,15,25,35],fontsize=24)
-# plt.yticks([80,84,88,92,96],fontsize=22)
-
-# trevi
-# plt.xticks([0,5,10,15,20,25],fontsize=24)
-# plt.yticks([88,92,96,100],fontsize=22)
-
-
-# mnist
-# plt.xticks([0.2, 0.6,1.0,1.4],fontsize=24)
-# plt.yticks([96,97,98,99,100],fontsize=22)
-
-# mnist
-# plt.xticks([0.2, 0.6,1.0,1.4],fontsize=24)
-# plt.yticks([96,97,98,99,100],fontsize=22)
-
-
-
-# gist
-# plt.xticks([5,15,25,35],fontsize=24)
-# plt.yticks([75,85,95,100],fontsize=22)
-
-
-# plt.yticks([1e1,1e2,1e3,1e4],['$10^1$','$10^2$','$10^3$','$10^4$'],fontsize=18)
-# plt.yticks([1e1,1e2,1e3,1e4],['$10^1$','$10^2$','$10^3$','$10^4$'],fontsize=18)
-
-# handles, labels = plt.gca().get_legend_handles_labels()
-# plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order]) 
 
 
 
@@ -206,7 +167,7 @@ plt.legend(loc='best',ncol = 2, fontsize=16)  #显示图中左上角的标识区
 # plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=6,mode="expand", borderaxespad=0.,fontsize=15.5)  #显示图中左上角的标识区域
 
 plt.tight_layout()
-plt.savefig(f'./figures/fig/ann-{dataset}.png',  format='png')
+plt.savefig(f'./figures/ann-bulletin-{dataset}.png',  format='png')
 
 # plt.show()
 # plt.savefig('../figs/approx-node-full-%s-recall.png' % ds,  format='png')

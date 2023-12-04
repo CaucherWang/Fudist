@@ -91,7 +91,7 @@ if __name__ == '__main__':
     data_shuf_path = os.path.join(path, f'{dataset}_base_shuf2.fvecs')
     print(f"Reading shuffled data from {data_shuf_path}")
     X_new = read_fvecs(data_shuf_path)
-    ind_path = os.path.join(path, f'{dataset}_ind2.ibin')
+    ind_path = os.path.join(path, f'{dataset}_ind_plain.ibin')
     print(f"Reading indegree from {ind_path}")
     indegree = ibin_read(ind_path)
     

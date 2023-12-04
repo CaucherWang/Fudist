@@ -275,7 +275,7 @@ namespace hnswlib {
     };
 
     static int
-    L2SqrI4x(const void *__restrict pVect1, const void *__restrict pVect2, const void *__restrict qty_ptr) {
+    L2SqrU84x(const void *__restrict pVect1, const void *__restrict pVect2, const void *__restrict qty_ptr) {
 
         size_t qty = *((size_t *) qty_ptr);
         int res = 0;
@@ -301,7 +301,7 @@ namespace hnswlib {
         return (res);
     }
 
-    static int L2SqrI(const void* __restrict pVect1, const void* __restrict pVect2, const void* __restrict qty_ptr) {
+    static int L2SqrU8(const void* __restrict pVect1, const void* __restrict pVect2, const void* __restrict qty_ptr) {
         size_t qty = *((size_t*)qty_ptr);
         int res = 0;
         unsigned char* a = (unsigned char*)pVect1;
@@ -316,18 +316,18 @@ namespace hnswlib {
         return (res);
     }
 
-    class L2SpaceI : public SpaceInterface<int> {
+    class L2SpaceU8 : public SpaceInterface<int> {
 
         DISTFUNC<int> fstdistfunc_;
         size_t data_size_;
         size_t dim_;
     public:
-        L2SpaceI(size_t dim) {
+        L2SpaceU8(size_t dim) {
             if(dim % 4 == 0) {
-                fstdistfunc_ = L2SqrI4x;
+                fstdistfunc_ = L2SqrU84x;
             }
             else {
-                fstdistfunc_ = L2SqrI;
+                fstdistfunc_ = L2SqrU8;
             }
             dim_ = dim;
             data_size_ = dim * sizeof(unsigned char);
@@ -345,9 +345,83 @@ namespace hnswlib {
             return &dim_;
         }
 
-        ~L2SpaceI() {}
+        ~L2SpaceU8() {}
     };
 
+
+    static int
+    L2SqrI84x(const void *__restrict pVect1, const void *__restrict pVect2, const void *__restrict qty_ptr) {
+
+        size_t qty = *((size_t *) qty_ptr);
+        int res = 0;
+        char *a = (char *) pVect1;
+        char *b = (char *) pVect2;
+
+        qty = qty >> 2;
+        for (size_t i = 0; i < qty; i++) {
+
+            res += ((*a) - (*b)) * ((*a) - (*b));
+            a++;
+            b++;
+            res += ((*a) - (*b)) * ((*a) - (*b));
+            a++;
+            b++;
+            res += ((*a) - (*b)) * ((*a) - (*b));
+            a++;
+            b++;
+            res += ((*a) - (*b)) * ((*a) - (*b));
+            a++;
+            b++;
+        }
+        return (res);
+    }
+
+    static int L2SqrI8(const void* __restrict pVect1, const void* __restrict pVect2, const void* __restrict qty_ptr) {
+        size_t qty = *((size_t*)qty_ptr);
+        int res = 0;
+        char* a = (char*)pVect1;
+        char* b = (char*)pVect2;
+
+        for(size_t i = 0; i < qty; i++)
+        {
+            res += ((*a) - (*b)) * ((*a) - (*b));
+            a++;
+            b++;
+        }
+        return (res);
+    }
+
+    class L2SpaceI8 : public SpaceInterface<int> {
+
+        DISTFUNC<int> fstdistfunc_;
+        size_t data_size_;
+        size_t dim_;
+    public:
+        L2SpaceI8(size_t dim) {
+            if(dim % 4 == 0) {
+                fstdistfunc_ = L2SqrI84x;
+            }
+            else {
+                fstdistfunc_ = L2SqrI8;
+            }
+            dim_ = dim;
+            data_size_ = dim * sizeof(char);
+        }
+
+        size_t get_data_size() {
+            return data_size_;
+        }
+
+        DISTFUNC<int> get_dist_func() {
+            return fstdistfunc_;
+        }
+
+        void *get_dist_func_param() {
+            return &dim_;
+        }
+
+        ~L2SpaceI8() {}
+    };
 
 
 

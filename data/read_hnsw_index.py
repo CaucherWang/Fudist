@@ -2,63 +2,11 @@ import hnswlib
 import numpy as np
 import struct
 import os
-def read_hnsw_index(filepath, D):
-    '''
-    Read hnsw index from binary file
-    '''
-    index = hnswlib.Index(space='l2', dim=D)
-    index.load_index(filepath)
-    return index
-
-def read_fvecs(filename, c_contiguous=True):
-    fv = np.fromfile(filename, dtype=np.float32)
-    if fv.size == 0:
-        return np.zeros((0, 0))
-    dim = fv.view(np.int32)[0]
-    assert dim > 0
-    fv = fv.reshape(-1, 1 + dim)
-    if not all(fv.view(np.int32)[:, 0] == dim):
-        raise IOError("Non-uniform vector sizes in " + filename)
-    fv = fv[:, 1:]
-    if c_contiguous:
-        fv = fv.copy()
-    return fv
+from utils import *
     
-def to_ivecs(filename: str, array: np.ndarray):
-    print(f"Writing File - {filename}")
-    topk = (np.int32)(array.shape[1])
-    array = array.astype(np.int32)
-    topk_array = np.array([topk] * len(array), dtype='int32')
-    file_out = np.column_stack((topk_array, array.view('int32')))
-    file_out.tofile(filename)
-    
-
-def to_fvecs(filename, data):
-    print(f"Writing File - {filename}")
-    with open(filename, 'wb') as fp:
-        for y in data:
-            d = struct.pack('I', len(y))
-            fp.write(d)
-            for x in y:
-                a = struct.pack('f', x)
-                fp.write(a)
-
-# return internal ids           
-def get_neighbors_with_internal_id(data_level_0, internal_id, size_data_per_element):
-    start = int(internal_id * size_data_per_element / 4)
-    cnt = data_level_0[start]
-    neighbors = []
-    for i in range(cnt):
-        neighbors.append(data_level_0[start + i + 1])
-    return neighbors
-
-# return internal ids
-def get_neighbors_with_external_label(data_level_0, external_label, size_data_per_element, label2id):
-    internal_id = label2id[external_label]
-    return get_neighbors_with_internal_id(data_level_0, internal_id, size_data_per_element)
 
 source = './data/'
-dataset = 'sift'
+dataset = 'glove1.2m'
 ef = 500
 M = 16
 
@@ -96,29 +44,31 @@ if __name__ == '__main__':
         
     print('read index finished')
     
-    total_cnt = 0
-    nhub_points = 0
-    indegree = np.zeros(data_size, dtype=np.int32)
-    for i in range(data_size):
-        if i % 100000 == 0:
-            print(i)
-        neighbors = get_neighbors_with_external_label(data_level_0, i, size_data_per_element, label2id)
-        total_cnt += len(neighbors)
-        for j in neighbors:
-            indegree[j] += 1
-    hubs = []
-    for i in range(len(indegree)):
-        if indegree[i] > 100:
-            hubs.append(i)
-    hubs = np.array(hubs)
-    to_ivecs(os.path.join(path, f'{dataset}_hubs.ivecs'), hubs.reshape(-1, 1))
-    print(f"average out degree = {total_cnt / data_size}")
-    print(f"nhub_points = {len(hubs)}")
     
-    mean = np.mean(indegree)
-    percents = np.percentile(indegree, q=[5,10,25,50,75,90])
-    print(mean)
-    print(percents)
+    
+    # total_cnt = 0
+    # nhub_points = 0
+    # indegree = np.zeros(data_size, dtype=np.int32)
+    # for i in range(data_size):
+    #     if i % 100000 == 0:
+    #         print(i)
+    #     neighbors = get_neighbors_with_external_label(data_level_0, i, size_data_per_element, label2id)
+    #     total_cnt += len(neighbors)
+    #     for j in neighbors:
+    #         indegree[j] += 1
+    # hubs = []
+    # for i in range(len(indegree)):
+    #     if indegree[i] > 100:
+    #         hubs.append(i)
+    # hubs = np.array(hubs)
+    # write_ivecs(os.path.join(path, f'{dataset}_hubs.ivecs'), hubs.reshape(-1, 1))
+    # print(f"average out degree = {total_cnt / data_size}")
+    # print(f"nhub_points = {len(hubs)}")
+    
+    # mean = np.mean(indegree)
+    # percents = np.percentile(indegree, q=[5,10,25,50,75,90])
+    # print(mean)
+    # print(percents)
     
 
     

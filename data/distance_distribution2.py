@@ -61,7 +61,7 @@ def compute_ed(matrix1, matrix2):
 # source = '/home/hadoop/wzy/dataset/'
 # datasets = ['yandex-text2image1M']
 source  = './data/'
-datasets = ['sift']
+datasets = ['word2vec']
 if __name__ == '__main__':
     for dataset in datasets:
         dir = os.path.join(source, dataset)

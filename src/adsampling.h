@@ -43,6 +43,7 @@ vector<float> ratios;   // 0 for 0, 1 for deltaD, 2 for 2 deltaD
 long double distance_time = 0, approx_dist_time = 0;
 unsigned long long tot_dimension = 0;
 unsigned long long tot_dist_calculation = 0;
+unsigned long long tot_hops = 0;
 unsigned long long tot_full_dist = 0;
 unsigned long long tot_approx_dist = 0;
 unsigned long long tot_fn = 0;
@@ -56,6 +57,7 @@ void clear(){
     approx_dist_time = 0;
     tot_approx_dist = 0;
     tot_fn = 0;
+    tot_hops = 0;
     // tot_comp_dim = 0;
 }
 

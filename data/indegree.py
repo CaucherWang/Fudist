@@ -78,22 +78,24 @@ def get_neighbors_with_external_label(data_level_0, external_label, size_data_pe
     internal_id = label2id[external_label]
     return get_neighbors_with_internal_id(data_level_0, internal_id, size_data_per_element)
 
-source = './data/'
-dataset = 'deep'
+source = '../data/'
+dataset = 'glove1.2m'
+postfix = ''
 ef = 500
 M = 16
+dim = 200
 
 if __name__ == '__main__':
     path = os.path.join(source, dataset)
-    index_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}.index')
+    index_path = os.path.join(path, f'{dataset}_ef{ef}_M{M}.index' + postfix)
     print(f"Reading index from {index_path}")
-    data_path = os.path.join(path, f'{dataset}_base.fvecs')
-    # read data vectors
-    print(f"Reading {dataset} from {data_path}")
-    X = read_fvecs(data_path)
+    # data_path = os.path.join(path, f'{dataset}_base.fvecs')
+    # # read data vectors
+    # print(f"Reading {dataset} from {data_path}")
+    # X = read_fvecs(data_path)
 
     
-    index = read_hnsw_index(index_path, X.shape[1])
+    index = read_hnsw_index(index_path, dim)
     data_size = index.get_current_count()
     print(f"totally {data_size} items in index")
     capacity = index.get_max_elements()
@@ -130,8 +132,9 @@ if __name__ == '__main__':
         neighbors = get_neighbors_with_external_label(data_level_0, i, size_data_per_element, label2id)
         total_cnt += len(neighbors)
         for j in neighbors:
-            indegree[j] += 1
-    ind_path = os.path.join(path, f'{dataset}_ind.ibin')
+            indegree[id2label[j]] += 1
+    # keys are labels
+    ind_path = os.path.join(path, f'{dataset}_ind.ibin' + postfix)
     ibin_write(indegree, ind_path)
     print("in-degree:")
     mean = np.mean(indegree)

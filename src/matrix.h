@@ -25,6 +25,7 @@ public:
     Matrix(); // Default
     Matrix(char * data_file_path); // IO
     Matrix(char * data_file_path, bool from_fdat); // IO from fdat (pq codebook)
+    Matrix(char * data_file_path, int N); // IO from fbin
     Matrix(size_t n, size_t d); // Matrix of size n * d
 
     // Deconstruction
@@ -41,6 +42,7 @@ public:
     
     void mul(const Matrix<T> &A, Matrix<T> &result) const;
     float dist(size_t a, const Matrix<T> &B, size_t b) const;
+    void read_bin(char *data_file_path);
     T* operator[](int row){
         return data + (row * d);
     }
@@ -54,7 +56,30 @@ Matrix<T>::Matrix(){
 }
 
 template <typename T>
-Matrix<T>::Matrix(char *data_file_path){
+void Matrix<T>::read_bin(char *data_file_path){
+    n = 0;
+    d = 0;
+    data = NULL;
+    std::cerr << data_file_path << std::endl;
+    std::ifstream in(data_file_path, std::ios::binary);
+
+    in.read((char*)&n, 4);
+    in.read((char*)&d, 4);
+
+    std::cerr << "Dimensionality - " <<  d <<std::endl;
+    data = new T [(size_t)n * (size_t)d];
+    std::cerr << "Cardinality - " << n << std::endl;
+    // in.read((char*)&data, N * d * 4);
+    for (size_t i = 0; i < n; i++) {
+        in.read((char*)(data + i * d), d * sizeof(T));
+    }
+
+    in.close();
+
+}
+
+template <typename T>
+Matrix<T>::Matrix(char *data_file_path){    
     n = 0;
     d = 0;
     data = NULL;
@@ -64,6 +89,19 @@ Matrix<T>::Matrix(char *data_file_path){
         std::cerr << "open file error" << std::endl;
         exit(-1);
     }
+    std::string filename(data_file_path);
+    std::string extension = "bin";
+    size_t pos = filename.length() - extension.length();
+    if (pos != std::string::npos && filename.substr(pos) == extension) {
+        std::cerr << "The filename ends with bin" << std::endl;   
+        in.close();
+        read_bin(data_file_path);
+        return;
+    }else{
+        std::cerr << "The filename does not end with bin" << std::endl;   
+    }
+
+
     in.read((char*)&d, 4);
     
     std::cerr << "Dimensionality - " <<  d <<std::endl;
@@ -76,8 +114,48 @@ Matrix<T>::Matrix(char *data_file_path){
     in.seekg(0, std::ios::beg);
     for (size_t i = 0; i < n; i++) {
         in.seekg(4, std::ios::cur);
-        in.read((char*)(data + i * d), d * 4);
+        in.read((char*)(data + i * d), d * sizeof(T));
     }
+    in.close();
+}
+
+template <typename T>
+Matrix<T>::Matrix(char *data_file_path, int N){
+    std::string filename(data_file_path);
+    std::string extension = "bin";
+    size_t pos = filename.length() - extension.length();
+    
+    n = 0;
+    d = 0;
+    data = NULL;
+    std::cerr << data_file_path << std::endl;
+    std::ifstream in(data_file_path, std::ios::binary);
+    if (!in.is_open()) {
+        std::cerr << "open file error" << std::endl;
+        exit(-1);
+    }
+    if (pos != std::string::npos && filename.substr(pos) == extension) {
+        std::cout << "The filename ends with bin" << std::endl;   
+    }else{
+        std::cout << "The filename does not end with bin" << std::endl;   
+        exit(-1);
+    }
+
+    in.read((char*)&n, 4);
+    in.read((char*)&d, 4);
+    assert(n >= N);
+    
+    
+    std::cerr << "Dimensionality - " <<  d <<std::endl;
+    data = new T [(size_t)N * (size_t)d];
+    std::cerr << "Cardinality - " << n << std::endl;
+    std::cerr << "We read - " << N << std::endl;
+    n = N;
+    // in.read((char*)&data, N * d * 4);
+    for (size_t i = 0; i < n; i++) {
+        in.read((char*)(data + i * d), d * sizeof(T));
+    }
+
     in.close();
 }
 

@@ -5,7 +5,7 @@ efConstruction=500
 M=16
 data='deep'
 
-g++ -o ./src/index_hnsw ./src/index_hnsw.cpp -I ./src/ -O3 -mavx2 -fopenmp
+# g++ -o ./src/index_hnsw ./src/index_hnsw.cpp -I ./src/ -O3 -mavx2 -fopenmp
 
 
 echo "Indexing - ${data}"
@@ -13,9 +13,9 @@ echo "Indexing - ${data}"
 data_path=./data/${data}
 index_path=./data/${data}
 
-data_file="${data_path}/${data}_base_shuf2.fvecs"
-index_file="${index_path}/${data}_ef${efConstruction}_M${M}.index_shuf2"
-./src/index_hnsw -d $data_file -i $index_file -e $efConstruction -m $M
+data_file="${data_path}/${data}_base.fvecs_shuf8"
+index_file="${index_path}/${data}_ef${efConstruction}_M${M}.index_shuf8"
+./src/index_hnsw -t float -d $data_file -i $index_file -e $efConstruction -m $M
 
 # data_file="${data_path}/O${data}_base.fvecs"
 # index_file="${index_path}/O${data}_ef${efConstruction}_M${M}.index"

@@ -8,7 +8,7 @@
 #include <iostream>
 #include "matrix.h"
 #include "utils.h"
-#include <boost/math/distributions/chi_squared.hpp>
+// #include <boost/math/distributions/chi_squared.hpp>
 using namespace std;
 
 namespace lsh{
@@ -32,11 +32,11 @@ namespace lsh{
         // ipdistfunc_ = s->get_dist_func();
         // setHash();
 
-		boost::math::chi_squared chi(lowdim);
-		coeffq = 1.0 / boost::math::quantile(chi, probQ);
-        lowdimspace = new L2Space(lowdim);
-        fstdistfunc_ = lowdimspace->get_dist_func();
-        dist_func_param_ = lowdimspace->get_dist_func_param();
+		// boost::math::chi_squared chi(lowdim);
+		// coeffq = 1.0 / boost::math::quantile(chi, probQ);
+        // lowdimspace = new L2Space(lowdim);
+        // fstdistfunc_ = lowdimspace->get_dist_func();
+        // dist_func_param_ = lowdimspace->get_dist_func_param();
 	}
 
 

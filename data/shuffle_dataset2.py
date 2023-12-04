@@ -1,82 +1,41 @@
 import numpy as np
 import os
-import struct
+from utils import *
 
-def fbin_read(fname: str):
-    a = np.memmap(fname, dtype='int32', mode='r')
-    # a = np.fromfile(fname + ".fbin", dtype='int32')
-    num = a[0]
-    d = a[1]
-    print(f"{num} * {d}")
-    return a[2:].reshape(-1, d)[:num, :].copy().view('float32')
-
-def fbin_write(x, path: str):
-    x = x.astype('float32')
-    f = open(path, "wb")
-    n, d = x.shape
-    np.array([n, d], dtype='int32').tofile(f)
-    x.tofile(f)
-    
 def rand_select(nq, nx):
     # randomly select nq numbers from [0,nx)
     return np.random.choice(nx, nq, replace=False)
 
-def ibin_read(fname: str):
-    a = np.fromfile(fname + ".ibin", dtype='int32')
-    num = a[0]
-    d = a[1]
-    return a[2:].reshape(-1, d)[:num, :].copy()
 
-def ibin_write(x, path: str):
-    print(f"Writing File - {path}")
-    x = x.astype('int32')
-    f = open(path, "wb")
-    x.tofile(f)
-    f.close()
-
-def read_fvecs(filename, c_contiguous=True):
-    fv = np.fromfile(filename, dtype=np.float32)
-    if fv.size == 0:
-        return np.zeros((0, 0))
-    dim = fv.view(np.int32)[0]
-    assert dim > 0
-    fv = fv.reshape(-1, 1 + dim)
-    if not all(fv.view(np.int32)[:, 0] == dim):
-        raise IOError("Non-uniform vector sizes in " + filename)
-    fv = fv[:, 1:]
-    if c_contiguous:
-        fv = fv.copy()
-    return fv
-
-def to_fvecs2(filename, data):
-    print(f"Writing File - {filename}")
-    dim = (np.int32)(data.shape[1])
-    data = data.astype(np.float32)
-    # ff = np.memmap(path, dtype='int32', shape=(len(array), dim+1), mode='w+')
-    # ff[:, 0] = dim
-    # ff[:, 1:] = array.view('int32')
-    # del ff
-    dim_array = np.array([dim] * len(data), dtype='int32')
-    file_out = np.column_stack((dim_array, data.view('int32')))
-    file_out.tofile(filename)
-
-def to_ivecs(filename: str, array: np.ndarray):
-    print(f"Writing File - {filename}")
-    topk = (np.int32)(array.shape[1])
-    array = array.astype(np.int32)
-    topk_array = np.array([topk] * len(array), dtype='int32')
-    file_out = np.column_stack((topk_array, array.view('int32')))
-    file_out.tofile(filename)
+def update_gt(gt, original_positions):
+    # update the ground truth
+    for i in range(gt.shape[0]):
+        for j in range(gt.shape[1]):
+            gt[i][j] = original_positions[gt[i][j]]
+    return gt
 
 source = './data/'
-datasets = ['deep']
+datasets = ['rand200']
+shuf_num = 11
 if __name__ == '__main__':
     for dataset in datasets:
         dir = os.path.join(source, dataset)
         data_file = os.path.join(dir, f'{dataset}_base.fvecs')
-        shuf_data_file = os.path.join(dir, f'{dataset}_base_shuf2.fvecs')
-        pos_file = os.path.join(dir, f'{dataset}_pos2.ibin')
+        query_file = os.path.join(dir, f'{dataset}_query.fvecs')
+        gt_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs')
+        gt_hard_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_hard')
+        gt_easy_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_easy')
+        shuf_gt_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_shuf{shuf_num}')
+        shuf_gt_hard_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_hard_shuf{shuf_num}')
+        shuf_gt_easy_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_easy_shuf{shuf_num}')
+        shuf_data_file = os.path.join(dir, f'{dataset}_base.fvecs_shuf{shuf_num}')
+        pos_file = os.path.join(dir, f'{dataset}_shuf{shuf_num}.ibin')
         X = read_fvecs(data_file)
+        Q = read_fvecs(query_file)
+        # gt_shuf = read_ivecs(shuf_gt_file)
+        gt = read_ivecs(gt_file)
+        # gt_hard = read_ivecs(gt_hard_file)
+        # gt_easy = read_ivecs(gt_easy_file)
         nx = X.shape[0]
         
         # Get the number of rows in the matrix
@@ -85,11 +44,20 @@ if __name__ == '__main__':
         original_positions = np.arange(rows)
         # Shuffle the original positions
         np.random.shuffle(original_positions)
+        old2new = [ 0 for i in range(rows) ]
+        for i in range(rows):
+            old2new[original_positions[i]] = i
         # Create a shuffled matrix using the shuffled positions
-        X_new = X[original_positions]        
+        X_new = X[original_positions]
+        gt = update_gt(gt, old2new)
+        # gt_hard = update_gt(gt_hard, old2new)
+        # gt_easy = update_gt(gt_easy, old2new)        
         
         print(X_new.shape)
-        to_fvecs2(shuf_data_file, X_new)
-        # to_ivecs(pos_file, original_positions)
-        ibin_write(original_positions, pos_file)
+        write_fvecs(shuf_data_file, X_new)
+        # # to_ivecs(pos_file, original_positions)
+        write_ibin_simple(pos_file, original_positions)
+        write_ivecs(shuf_gt_file, gt)
+        # write_ivecs(shuf_gt_hard_file, gt_hard)
+        # write_ivecs(shuf_gt_easy_file, gt_easy)
         

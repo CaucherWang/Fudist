@@ -28,6 +28,14 @@
 typedef std::pair<float, size_t> Result;
 typedef std::priority_queue<Result> ResultHeap; 
 
+struct Metric{
+    int ndc = 0;
+
+    void clear(){
+        ndc = 0;
+    }
+};
+
 class StopW {
     std::chrono::high_resolution_clock::time_point time_begin;
 public:

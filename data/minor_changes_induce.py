@@ -131,7 +131,7 @@ def read_ivecs(filename, c_contiguous=True):
     return fv
 
 source = './data/'
-datasets = ['deep']
+datasets = ['glove1.2m']
 
 dataset = datasets[0]
 path = os.path.join(source, dataset)
@@ -197,9 +197,13 @@ gt_I = gt_I
 # print(percents)
 
 # top1 = sorted_gt_D[:, 0]
-top1 = gt_D[:, 9]
-plt.hist(top1, bins='auto', edgecolor='black')
-plt.xlabel('Top-20 Distance')
+k = 99
+top1 = gt_D[:, k-1]
+plt.hist(top1, bins=30, edgecolor='black')
+plt.xlabel(f'Top-{k} Distance')
 plt.ylabel('Frequency')
-plt.title('Distribution of top-100 distance')
-plt.savefig(f'./figures/{dataset}-top100-dist.png')
+plt.title(f'Distribution of top-{k} distance')
+plt.savefig(f'./figures/{dataset}-top{k}-dist.png')
+X_dis = parallel_sort.sort(top1)
+for percent in [0.001, 0.01, 0.1, 0.3, 0.5, 0.75,0.9, 0.99]:
+    print(f'percent: {percent}, value: {X_dis[int(percent * len(X_dis))]}')

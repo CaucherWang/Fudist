@@ -1,6 +1,8 @@
 #define USE_SIMD
 // #define DEEP_DIVE
-#define DEEP_QUERY
+// #define DEEP_QUERY
+// #define STAT_QUERY
+// #define FOCUS_QUERY (9766)
 
 // #define COUNT_DIMENSION
 // #define COUNT_FN
@@ -15,8 +17,10 @@
 
 #include <iostream>
 #include <fstream>
-#include <gperftools/profiler.h>
+#include <iomanip>
+// #include <gperftools/profiler.h>
 #include <ctime>
+#include <map>
 #include <cmath>
 #include "matrix.h"
 #include "utils.h"
@@ -36,7 +40,6 @@ using namespace std;
 using namespace hnswlib;
 
 const int MAXK = 100;
-
 long double rotation_time=0;
 
 float *read_from_floats(const char *data_file_path){
@@ -64,11 +67,12 @@ float *read_from_floats(const char *data_file_path){
     return data;
 }
 
-static void get_gt(unsigned int *massQA, float *massQ, size_t vecsize, size_t qsize, SpaceInterface<float> &l2space,
-       size_t vecdim, vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, size_t subk, HierarchicalNSW<float> &appr_alg) {
+template<typename data_t, typename dist_t>
+static void get_gt(unsigned int *massQA, data_t *massQ, size_t vecsize, size_t qsize, SpaceInterface<dist_t> &l2space,
+       size_t vecdim, vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, size_t subk, HierarchicalNSW<dist_t> &appr_alg) {
 
-    (vector<std::priority_queue<std::pair<float, labeltype >>>(qsize)).swap(answers);
-    DISTFUNC<float> fstdistfunc_ = l2space.get_dist_func();
+    (vector<std::priority_queue<std::pair<dist_t, labeltype >>>(qsize)).swap(answers);
+    DISTFUNC<dist_t> fstdistfunc_ = l2space.get_dist_func();
     for (int i = 0; i < qsize; i++) {
         for (int j = 0; j < subk; j++) {
             answers[i].emplace(appr_alg.fstdistfunc_(massQ + i * vecdim, appr_alg.getDataByInternalId(appr_alg.getInternalId(massQA[k * i + j])), appr_alg.dist_func_param_), massQA[k * i + j]);
@@ -76,8 +80,8 @@ static void get_gt(unsigned int *massQA, float *massQ, size_t vecsize, size_t qs
     }
 }
 
-
-int recall(std::priority_queue<std::pair<float, labeltype >> &result, std::priority_queue<std::pair<float, labeltype >> &gt){
+template<typename dist_t>
+int recall(std::priority_queue<std::pair<dist_t, labeltype >> &result, std::priority_queue<std::pair<dist_t, labeltype >> &gt){
     unordered_set<labeltype> g;
     while (gt.size()) {
         g.insert(gt.top().second);
@@ -94,12 +98,12 @@ int recall(std::priority_queue<std::pair<float, labeltype >> &result, std::prior
     return ret;
 }
 
-
-int recall_deep_dive(std::priority_queue<std::pair<float, labeltype >> &result, std::priority_queue<std::pair<float, labeltype >> &gt, HierarchicalNSW<float> &appr_alg, 
+template<typename dist_t>
+int recall_deep_dive(std::priority_queue<std::pair<dist_t, labeltype >> &result, std::priority_queue<std::pair<dist_t, labeltype >> &gt, HierarchicalNSW<dist_t> &appr_alg, 
                     vector<int>&out_degree, vector<int>&in_degree){
     unordered_set<labeltype> g;
-    vector<std::pair<float, labeltype >> gt_vec;
-    vector<std::pair<float, labeltype >> result_vec;
+    vector<std::pair<dist_t, labeltype >> gt_vec;
+    vector<std::pair<dist_t, labeltype >> result_vec;
     unordered_set<labeltype> r1, r2;
     while (gt.size()) {
         g.insert(gt.top().second);
@@ -108,7 +112,7 @@ int recall_deep_dive(std::priority_queue<std::pair<float, labeltype >> &result, 
         gt.pop();
     }
     assert(r1.size() == gt_vec.size());
-    std::priority_queue<std::pair<float, labeltype >> results;
+    std::priority_queue<std::pair<dist_t, labeltype >> results;
     while (result.size()) {
         result_vec.push_back(result.top());
         results.push(result.top());
@@ -144,7 +148,7 @@ int recall_deep_dive(std::priority_queue<std::pair<float, labeltype >> &result, 
 
     // cout << "Ground Truth Vectors:" << endl;
     // for(int i = gt_vec.size() - 1; i >= 0; --i){
-    //     auto vec = (float*)appr_alg.getDataByInternalId(appr_alg.getInternalId(gt_vec[i].second));
+    //     auto vec = (dist_t*)appr_alg.getDataByInternalId(appr_alg.getInternalId(gt_vec[i].second));
     //     cout << gt_vec.size() - i << ": ";
     //     for(int j =0; j < *(int*)appr_alg.dist_func_param_; ++j){
     //         cout << vec[j] << ",";
@@ -156,7 +160,7 @@ int recall_deep_dive(std::priority_queue<std::pair<float, labeltype >> &result, 
 
     // cout << "Result Vectors:" << endl;
     // for(int i = result_vec.size() - 1; i >= 0; --i){
-    //     auto vec = (float*)appr_alg.getDataByInternalId(appr_alg.getInternalId(result_vec[i].second));
+    //     auto vec = (dist_t*)appr_alg.getDataByInternalId(appr_alg.getInternalId(result_vec[i].second));
     //     cout << result_vec.size() - i << ": ";
     //     for(int j =0; j < *(int*)appr_alg.dist_func_param_; ++j){
     //         cout << vec[j] << ",";
@@ -174,8 +178,9 @@ int recall_deep_dive(std::priority_queue<std::pair<float, labeltype >> &result, 
     return ret;
 }
 
-static void test_approx_deep_dive(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
-            vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
+template<typename data_t, typename dist_t>
+static void test_approx_deep_dive(data_t *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<dist_t> &appr_alg, size_t vecdim,
+            vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive) {
     size_t correct = 0;
     size_t total = 0;
     long double total_time = 0;
@@ -188,7 +193,7 @@ static void test_approx_deep_dive(float *massQ, size_t vecsize, size_t qsize, Hi
 
     for(int _ = 0; _ < 1; ++_){
         for (int i = 0; i < qsize; i++) {
-            if(i != 0)  continue;
+            if(i !=40)  continue;
             paa::cur_query_label = i;
             lsh::cur_query_label = i;
             adsampling::cur_query_label = i;
@@ -203,14 +208,14 @@ static void test_approx_deep_dive(float *massQ, size_t vecsize, size_t qsize, Hi
             struct rusage run_start, run_end;
             GetCurTime( &run_start);
 #endif
-            std::priority_queue<std::pair<float, labeltype >> result = appr_alg.searchKnn(massQ + vecdim * i, k, adaptive);  
+            std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnn(massQ + vecdim * i, k, adaptive);  
 #ifndef WIN32
             GetCurTime( &run_end);
             GetTime( &run_start, &run_end, &usr_t, &sys_t);
             total_time += usr_t * 1e6;
 #endif
             if(_ == 0){
-                std::priority_queue<std::pair<float, labeltype >> gt(answers[i]);
+                std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
                 total += gt.size();
                 int tmp = recall_deep_dive(result, gt, appr_alg, out_degree, in_degree);
                 cout << tmp << ",";
@@ -255,7 +260,7 @@ static void test_approx_deep_dive(float *massQ, size_t vecsize, size_t qsize, Hi
     double fn_ratio = adsampling::tot_fn / (double)adsampling::tot_approx_dist;
     long double recall = 1.0f * correct / total;
 
-    cout << setprecision(6);
+    std::cout << setprecision(6);
     
     // cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " " << adsampling::tot_dimension + adsampling::tot_full_dist * vecdim << endl;
     cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query 
@@ -281,17 +286,41 @@ static void test_approx_deep_dive(float *massQ, size_t vecsize, size_t qsize, Hi
 
 
 
-static void test_approx(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
-            vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
+template<typename data_t, typename dist_t>
+static void test_approx(data_t *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<dist_t> &appr_alg, size_t vecdim,
+            vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive) {
     size_t correct = 0;
     size_t total = 0;
     long double total_time = 0;
 
+    int expr_round = 1;
+
     adsampling::clear();
 
-    for(int _ = 0; _ < 1; ++_){
+    
+#ifdef DEEP_QUERY
+    hnswlib::indegrees_.resize(appr_alg.cur_element_count, 0);    // internal id
+    for(int i = 0 ; i <appr_alg.cur_element_count; i++){
+        int *data = (int *) appr_alg.get_linklist0(appr_alg.getInternalId(i));
+        size_t size = appr_alg.getListCount((linklistsizeint*)data);
+        data = data + 1;
+        for(int j = 0; j < size; ++j){
+            indegrees_[data[j]]++;
+        }
+    }
+    #ifdef STAT_QUERY
+    hop_cnt.resize(appr_alg.cur_element_count, 0);
+    #endif
+#endif
+
+    vector<long> ndcs(qsize, 0);
+    vector<int> recalls(qsize, 0);
+    long accum_ndc = 0;
+    for(int _ = 0; _ < expr_round; ++_){
         for (int i = 0; i < qsize; i++) {
-            if(i != 2)  continue;
+            #ifdef DEEP_QUERY
+            if(i != FOCUS_QUERY)  continue;
+            #endif
             paa::cur_query_label = i;
             lsh::cur_query_label = i;
             adsampling::cur_query_label = i;
@@ -306,36 +335,77 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
             struct rusage run_start, run_end;
             GetCurTime( &run_start);
 #endif
-            std::priority_queue<std::pair<float, labeltype >> result = appr_alg.searchKnn(massQ + vecdim * i, k, adaptive);  
+#ifdef DEEP_QUERY
+            std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
+            std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlainDEEP_QUERY(massQ + vecdim * i, k, gt);
+#else
+            std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive);  
+#endif
 #ifndef WIN32
             GetCurTime( &run_end);
             GetTime( &run_start, &run_end, &usr_t, &sys_t);
             total_time += usr_t * 1e6;
 #endif
             if(_ == 0){
-                std::priority_queue<std::pair<float, labeltype >> gt(answers[i]);
+                std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
                 total += gt.size();
                 int tmp = recall(result, gt);
+                cout << tmp << ",";
+                ndcs[i] += (adsampling::tot_full_dist - accum_ndc);
+                recalls[i] = tmp;
+                accum_ndc = adsampling::tot_full_dist;
+                #ifdef DEEP_QUERY
+                #ifndef STAT_QUERY
                 cout << tmp << endl;
+                #endif
+                #endif
                 correct += tmp;   
             }
         }
     }
 
-    long double time_us_per_query = total_time / qsize / 3.0 + rotation_time;
-    long double dist_calc_time = adsampling::distance_time / qsize / 3.0;
-    long double app_dist_calc_time = adsampling::approx_dist_time / qsize / 3.0;
-    long double approx_dist_per_query = adsampling::tot_approx_dist / (double)qsize / 3.0;
-    long double full_dist_per_query = adsampling::tot_full_dist / (double)qsize / 3.0;
-    long double tot_dist_per_query = adsampling::tot_dist_calculation / (double)qsize / 3.0;
-    long double tot_dim_per_query = adsampling::tot_dimension / (double)qsize / 3.0;
+#ifdef STAT_QUERY
+    // find the top 50 hop index and their hop counts, indegrees,
+    vector<pair<int, int>> top_hop_cnt;
+    for(int i = 0; i < appr_alg.cur_element_count; ++i){
+        top_hop_cnt.push_back(make_pair(hop_cnt[i], i));
+    }
+    sort(top_hop_cnt.begin(), top_hop_cnt.end(), greater<pair<int, int>>());
+    for(int i = 0; i < 50; ++i){
+        cout << i << ": " << top_hop_cnt[i].first << " " << top_hop_cnt[i].second << " " 
+        << indegrees_[top_hop_cnt[i].second] << endl;
+    }
+    string location = "../results/sift_hop_distances.fbin";
+    std::ofstream outfile(location);
+    for(auto v:hop_distance){
+        outfile << v << endl;
+    }
+    outfile.close();
+#endif
+
+    auto tmp = double(expr_round);
+    cout << endl;
+    for(auto &_: ndcs)
+        cout << _ << ","; 
+    cout << endl;
+    cout << setprecision(4);
+    for(int i =0;i<ndcs.size();++i)
+        cout << (double)recalls[i] / (double)ndcs[i] * 100.0 << ",";
+    long double time_us_per_query = total_time / qsize / tmp  + rotation_time;
+    long double dist_calc_time = adsampling::distance_time / qsize / tmp;
+    long double app_dist_calc_time = adsampling::approx_dist_time / qsize / tmp;
+    long double approx_dist_per_query = adsampling::tot_approx_dist / (double)qsize / tmp;
+    long double full_dist_per_query = adsampling::tot_full_dist / (double)qsize / tmp;
+    long double hop_per_query = adsampling::tot_hops / (double)qsize / tmp;
+    long double tot_dist_per_query = adsampling::tot_dist_calculation / (double)qsize / tmp;
+    long double tot_dim_per_query = adsampling::tot_dimension / (double)qsize / tmp;
     double fn_ratio = adsampling::tot_fn / (double)adsampling::tot_approx_dist;
     long double recall = 1.0f * correct / total;
 
     cout << setprecision(6);
-    
+    cout << endl;
     // cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " " << adsampling::tot_dimension + adsampling::tot_full_dist * vecdim << endl;
-    cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query 
+    cout << appr_alg.ef_ << " " << recall * 100.0 << " " << time_us_per_query << " ||| nhops: " << hop_per_query
     << " ||| full dist time: " << dist_calc_time << " ||| approx. dist time: " << app_dist_calc_time 
     << " ||| #full dists: " << full_dist_per_query << " ||| #approx. dist: " << approx_dist_per_query 
     << endl << "\t\t" 
@@ -356,21 +426,25 @@ static void test_approx(float *massQ, size_t vecsize, size_t qsize, Hierarchical
     return ;
 }
 
-static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<float> &appr_alg, size_t vecdim,
-               vector<std::priority_queue<std::pair<float, labeltype >>> &answers, size_t k, int adaptive) {
-    // vector<size_t> efs{100, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
+template<typename data_t, typename dist_t>
+static void test_vs_recall(data_t *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<dist_t> &appr_alg, size_t vecdim,
+               vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive) {
+    vector<size_t> efs{60,80, 100, 150, 200, 300, 400, 500, 600, 750, 1000, 1500, 2000};
     // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250};
-    // vector<size_t> efs{60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400, 500};
+    // vector<size_t> efs{30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 200, 250, 300,400,500,600};
+    // vector<size_t> efs{30,40,50,60, 70, 80, 90, 100, 125, 150, 200, 250, 300, 400};
     // vector<size_t> efs{500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000};
+    // vector<size_t> efs{500, 600, 750, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12500, 15000, 20000};
     // vector<size_t> efs{300, 500, 700, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000};
     // vector<size_t> efs{7000, 8000, 9000};
-    // vector<size_t> efs{200, 250, 300, 400, 500, 600, 750, 1000, 1500};
+    // vector<size_t> efs{200, 250, 300, 400, 500, 600, 750, 1000, 1500, 2000, 3000, 4000};
     // vector<size_t> efs{100, 150, 200, 250, 300, 400, 500, 600};
-    // vector<size_t> efs{1000,2000, 3000, 4000, 5000, 6000};
-    vector<size_t> efs{50};
+    // vector<size_t> efs{90,92,94,96,98,100, 102,104,106,108,110};
+    // vector<size_t> efs{140,142,144,146,148,150, 152,154,156,158,160};
+    // vector<size_t> efs{1000,2000, 3000, 4000, 5000, 6000, 7000};
+    // vector<size_t> efs{300,400,500,600};
     // vector<size_t> efs{10000, 12500, 15000, 20000};
-    // vector<size_t> efs{50, 100, 150};
+    // vector<size_t> efs{100};
 
         // ProfilerStart("../prof/svd-profile.prof");
     for (size_t ef : efs) {
@@ -383,6 +457,218 @@ static void test_vs_recall(float *massQ, size_t vecsize, size_t qsize, Hierarchi
     }
         // ProfilerStop();
 }
+
+template<typename data_t, typename dist_t>
+static void test_lb_recall(data_t *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<dist_t> &appr_alg, size_t vecdim,
+               vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive) {
+    double low_recall = 0.84, high_recall = 0.98;
+    int point_num = 8;
+    vector<int>recall_targets(point_num);
+    cout << "Targets: ";
+    for(int i = 0; i < point_num; ++i){
+        recall_targets[i] = k * ((high_recall - low_recall) / (point_num - 1) * i + low_recall);
+        cout << recall_targets[i] << ",";
+    }
+    cout << endl;
+    int ef_bound = 10000;
+
+    vector<vector<int>> results(qsize, vector<int>(point_num, 0));
+
+#pragma omp parallel for
+    for(int i = 0; i < qsize; ++i){
+#pragma omp critical
+        if(i % 100 == 0)
+            cerr << i << endl;
+        // if(i != 280) continue;
+        std::map<int, int> recall_records;  // recall -> ef
+        std::map<int,std::pair<int, int>> recall_records2; // ef->(recall,ndc)
+        for(int j=0; j < point_num; ++j){
+            int target = recall_targets[j];
+            int left = 1, right = ef_bound, tmp = -1;
+            if(recall_records.size() > 0){
+                if(recall_records.count(target) > 0){
+                    int ef = recall_records[target];
+                    int ndc = recall_records2[ef].second;
+                    results[i][j] = ndc;
+                    continue;
+                }
+                // find the first ef that is larger than the target
+                auto it = recall_records.lower_bound(target);
+                if(it != recall_records.end()){
+                    right = it->second;
+                }
+                // find the first ef that is smaller than the target
+                it = recall_records.upper_bound(target);
+                if(it != recall_records.begin()){
+                    --it;
+                    left = it->second;
+                }
+            }
+            left = min(left, right);
+            right = max(left, right);
+
+            int success = -1;
+            while(left < right){
+                int mid = (left + right) / 2;
+                if(recall_records2.count(mid) > 0){
+                    auto temp = recall_records2[mid];
+                    tmp = temp.first;
+                    adsampling::tot_full_dist = temp.second;
+                }
+                else{
+                    adsampling::clear();
+                    appr_alg.setEf(mid);
+                    std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive);  
+                    std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
+                    tmp = recall(result, gt);
+                    recall_records2[mid] = make_pair(tmp, adsampling::tot_full_dist);
+                    if(recall_records.count(tmp) == 0)  recall_records[tmp] = mid;
+                    else    recall_records[tmp] = min(recall_records[tmp], mid);
+
+                }
+                
+                if(tmp < target){
+                    left = mid + 1;
+                }else{
+                    success = adsampling::tot_full_dist;
+                    if(right == mid)
+                        break;
+                    right = mid;
+                }
+            }
+            if(success >= 0){
+                results[i][j] = success;
+            }else if(tmp < target){
+                // use right as ef
+                int mid = right;
+                if(recall_records2.count(mid) <= 0){
+                    if(mid == ef_bound)
+                        results[i][j] = adsampling::tot_full_dist;
+                    else{
+                        cerr << " Error " << i << "-" << j << endl;
+                        exit(-1);
+                    }
+                }else
+                    results[i][j] = recall_records2[mid].second;
+            }else{
+                cerr << "Error" << i << "-" << j << endl;
+                exit(-1);
+            }
+        }
+    }
+
+    for(int i = 0; i < point_num; ++i){
+        for(int j = 0; j < qsize; ++j){
+            cout << results[j][i] << ",";
+        }
+        cout << endl;
+    }
+}
+
+template<typename data_t, typename dist_t>
+static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<dist_t> &appr_alg, size_t vecdim,
+               vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive) {
+    double target_recall = 0.86;
+    int lowk = ceil(k * target_recall);
+    vector<int>ret(qsize, 0);
+
+    int index = 0;
+#pragma omp parallel for
+    for(int i = 0; i < qsize; ++i){
+        bool flag = false;
+        // if(i != 14)
+        //     continue;
+        #pragma omp critical
+        {
+            if(++index % 100 == 0)
+                cerr << index << " / " << qsize << endl;
+        }
+
+        int lowef = k, highef, curef, tmp, bound = 100000;
+        long success = -1;
+        Metric metric;
+
+
+        for(int _ = 0; _ < 1 && !flag; ++_){
+            lowef = k; highef = bound;
+            success = -1;
+            while(lowef < highef){
+                curef = (lowef + highef) / 2;
+                adsampling::clear();
+                metric.clear();
+                appr_alg.setEf(curef);
+
+                std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive, &metric);  
+
+                std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
+                tmp = recall(result, gt);
+                if(tmp < lowk){
+                    lowef = curef+1;
+                }else{
+                    success = metric->ndc;
+                    if(highef == curef)
+                        break;
+                    highef = curef;
+                }
+            }
+            if(success >= 0){
+                ret[i] = success;
+                flag = true;
+            }
+            else if(tmp >= lowk){
+                ret[i] = metric->ndc;
+                flag = true;
+            }
+            // if(tmp > highk){
+            //     // if(lowef > 50){
+            //     //     cerr << i << endl;
+            //     // }
+            //     long large_ndc = adsampling::tot_full_dist;
+            //     curef = lowef;
+            //     adsampling::clear();
+            //     appr_alg.setEf(curef);
+
+            //     std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive);  
+            //     std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
+            //     tmp = recall(result, gt);
+            //     if(tmp >= lowk){
+            //         cout << adsampling::tot_full_dist << ",";
+            //     }else{
+            //         cout << large_ndc << ",";
+            //     }
+            //     flag = true;
+            else if(tmp < lowk){
+                long large_ndc = metric.ndc;
+                curef = highef;
+                adsampling::clear();
+                metric.clear();
+                appr_alg.setEf(curef);
+
+                std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive, &metric);  
+                std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
+                tmp = recall(result, gt);
+                if(tmp >= lowk){
+                    ret[i] = metric.ndc;
+                    flag = true;
+                }else if(curef >= bound){
+                    cerr << i << endl;
+                    ret[i] = metric.ndc;
+                    flag = true;
+                }
+            }
+        }
+        if(!flag){
+            cerr << i << endl;
+            exit(-1);
+        }
+    }
+
+    for(int i = 0; i < qsize; ++i){
+        cout << ret[i] << ",";
+    }
+    cout << endl;
+}
+
 
 int main(int argc, char * argv[]) {
 
@@ -413,15 +699,16 @@ int main(int argc, char * argv[]) {
     //                           20:ADS-keep        50: SVD-keep        80: PCA-keep
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
-    int randomize = 0;
-    string data_str = "deep";   // dataset name
+    int method = 0;
+    string data_str = "glove1.2m";   // dataset name
+    int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
     string M_str ="16"; // 8 for msong,mnist,cifar  48 for nuswide
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:", longopts, &ind);
         switch (iarg){
             case 'd':
-                if(optarg)randomize = atoi(optarg);
+                if(optarg)method = atoi(optarg);
                 break;
         }
     }
@@ -445,12 +732,16 @@ int main(int argc, char * argv[]) {
     float finger_ratio = 1.5;
     float seanet_ratio = 1.5;
 
-    int subk=20;
+    int subk=50;
     string base_path_str = "../data";
     string result_base_path_str = "../results";
     string ef_str = "500"; 
-    string exp_name = "";
-    switch(randomize){
+    string exp_name = "perform_variance0.86";
+    string index_postfix = "_plain";
+    string query_postfix = "";
+    // string index_postfix = "";
+    string shuf_postfix = "";
+    switch(method){
         case 0:
             break;
         case 1:
@@ -482,13 +773,20 @@ int main(int argc, char * argv[]) {
             break;
     }
 
-    string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
+    string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + M_str + ".index" + index_postfix + shuf_postfix;
+    string data_path_str = base_path_str + "/" + data_str + "/" + data_str + "_base.fvecs" + shuf_postfix;
     string ADS_index_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string PCA_index_path_str = base_path_str + "/" + data_str + "/PCA_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string SVD_index_path_str = base_path_str + "/" + data_str + "/SVD_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string DWT_index_path_str = base_path_str + "/" + data_str + "/DWT_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
     string SEANet_index_path_str = base_path_str + "/SEANet_data/SEANet_" + data_str + "_ef" + ef_str + "_M" + M_str + ".index";
-    string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query.fvecs";
+    string query_path_str_postfix;
+    if(data_type == 0)  query_path_str_postfix = ".fbin";
+    else if(data_type == 1) query_path_str_postfix = ".u8bin";
+    else if(data_type == 2) query_path_str_postfix = ".i8bin";
+    query_path_str_postfix = ".fvecs";
+    string query_path_str = base_path_str + "/" + data_str + "/" + data_str + "_query" + query_path_str_postfix + query_postfix;
+    // string query_path_str = data_path_str;
     string result_prefix_str = "";
     #ifdef USE_SIMD
     result_prefix_str += "SIMD_";
@@ -496,14 +794,14 @@ int main(int argc, char * argv[]) {
     #ifdef ED2IP
     result_prefix_str += "IP_";
     #endif
-    string result_path_str = result_base_path_str + "/" + data_str + "/" + result_prefix_str + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log";
+    string result_path_str = result_base_path_str + "/" + data_str + "/" + result_prefix_str + data_str + "_ef" + ef_str + "_M" + M_str + "_" + exp_name + ".log" + index_postfix + shuf_postfix + query_postfix;
     #ifdef DEEP_DIVE
     result_path_str += "_deepdive"; 
     #endif
     #ifdef DEEP_QUERY
     result_path_str += "_deepquery";
     #endif
-    string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs";
+    string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth.ivecs" + shuf_postfix + query_postfix;
     string trans_path_str = base_path_str + "/" + data_str + "/O.fvecs";
     string transed_data_path_str = base_path_str + "/" + data_str + "/O" + data_str + "_base.fvecs";
     string lsh_trans_path_str = base_path_str + "/" + data_str + "/LSH" + to_string(lsh_dim) + ".fvecs";
@@ -601,7 +899,7 @@ int main(int argc, char * argv[]) {
         iarg = getopt_long(argc, argv, "i:q:g:r:t:n:k:e:p:", longopts, &ind);
         switch (iarg){
             // case 'd':
-            //     if(optarg)randomize = atoi(optarg);
+            //     if(optarg)method = atoi(optarg);
             //     break;
             case 'k':
                 if(optarg)subk = atoi(optarg);
@@ -633,8 +931,23 @@ int main(int argc, char * argv[]) {
         }
     }
     
-    Matrix<float> Q(query_path);
+    cout << "result path: "<< result_path << endl;
+    int simd_lowdim = -1;
+
+    // adsampling::D = Q.d;
+    freopen(result_path,"a",stdout);
+    cout << "k: "<<subk << endl;;
+    cerr << "ground truth path: " << groundtruth_path << endl;
     Matrix<unsigned> G(groundtruth_path);
+    size_t k = G.d;
+    unsigned q_num = 1000000;
+
+    if(data_type == 0){
+        cerr << "query path: " << query_path << endl;
+        Matrix<float> Q(query_path);
+        
+        Q.n = Q.n > q_num ? q_num : Q.n;
+        cerr << "Query number = " << Q.n << endl;
 
 #ifdef ED2IP
     string base_vec_len_path = base_path_str + "/" + data_str + "/base_vec_len.floats";
@@ -644,213 +957,239 @@ int main(int argc, char * argv[]) {
     hnswlib::fstdistfuncIP = ip_space.get_dist_func();
 #endif  
 
-    cout << "result path: "<< result_path << endl;
-    int simd_lowdim = -1;
-
-    // adsampling::D = Q.d;
-    freopen(result_path,"a",stdout);
-    cout << "k: "<<subk << endl;;
-    if(randomize == 1 || randomize == 2){
-        cout << setprecision(2) << ads_epsilon0 << " " << ads_delta_d;
-        if(randomize == 1) cout << " tight BSF ";
-        cout << endl;
-        adsampling::initialize(ads_delta_d);
-        adsampling::D = Q.d;
-        adsampling::epsilon0 = ads_epsilon0;
-        adsampling::init_ratios();
-        Matrix<float> P(transformation_path);
-        StopW stopw = StopW();
-        Q = mul(Q, P);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        memset(index_path, 0, sizeof(index_path));
-        strcpy(index_path, ads_index_path);
-    }else if(randomize == 20){
-        Matrix<float> P(transformation_path);
-        adsampling::project_table = Matrix<float>(transed_data_path);
-        StopW stopw = StopW();
-        adsampling::queries_project = mul(Q, P);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        adsampling::D = Q.d;
-        adsampling::epsilon0 = ads_epsilon0;
-        adsampling::delta_d = ads_delta_d;
-        adsampling::init_ratios();
-    }else if(randomize == 3){
-        paa::paa_table = Matrix<float>(paa_path);
-        StopW stopw = StopW();
-        paa::queries_paa = to_paa(Q, paa_segment);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        paa::D = Q.d;
-        paa::segment_num = paa_segment;
-        paa::len_per_seg = paa::D / paa::segment_num;
-    }else if(randomize == 4 || randomize == 41){
-        cout << setprecision(2) << lsh_p_tau;
-        if(randomize == 41) cout << "tight BSF";
-        cout <<endl;
-        Matrix<float> P(lsh_trans_path);
-        lsh::lsh_table = Matrix<float>(lsh_path);
-        StopW stopw = StopW();
-        lsh::queries_lsh = mul(Q, P);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        lsh::D = Q.d;
-        lsh::probQ = lsh_p_tau;
-        lsh::lowdim = P.d;
-        lsh::initialize();
-    }else if(randomize == 50){
-        Matrix<float> P(svd_trans_path);
-        svd::svd_table = Matrix<float>(svd_path);
-        StopW stopw = StopW();
-        svd::queries_svd = mul(Q, P);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        svd::D = Q.d;
-        svd::delta_d = pca_delta_d;
-    }else if(randomize == 5){
-        cout << pq_epsilon << endl;
-        Matrix<float> P(svd_trans_path);
-        // svd::svd_table = Matrix<float>(svd_path);
-        StopW stopw = StopW();
-        Q = mul(Q, P);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        svd::D = Q.d;
-        svd::delta_d = pca_delta_d;
-        memset(index_path, 0, sizeof(index_path));
-        strcpy(index_path, svd_index_path);
-    } else if(randomize == 8 || randomize == 81){
-        svd::D = Q.d;
-        svd::delta_d = pca_delta_d;
-        svd::initialize(pca_delta_d);
-        Matrix<float> P(pca_trans_path);
-        cout << pca_delta_d << " ";
-        if(randomize == 81) cout << " tight BSF";
-        cout << endl;
-        // svd::svd_table = Matrix<float>(svd_path);
-        StopW stopw = StopW();
-        Q = mul(Q, P);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        memset(index_path, 0, sizeof(index_path));
-        strcpy(index_path, pca_index_path);
-        if(randomize == 81){
-            auto ret = read_from_floats(pca_dist_distribution_path_str.c_str());
-            for(int i = 0; i < Q.d; ++i){
-                ret[i] = 1.0 / ret[i];
+        if(method == 1 || method == 2){
+            cout << setprecision(2) << ads_epsilon0 << " " << ads_delta_d;
+            if(method == 1) cout << " tight BSF ";
+            cout << endl;
+            adsampling::initialize(ads_delta_d);
+            adsampling::D = Q.d;
+            adsampling::epsilon0 = ads_epsilon0;
+            adsampling::init_ratios();
+            Matrix<float> P(transformation_path);
+            StopW stopw = StopW();
+            Q = mul(Q, P);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            memset(index_path, 0, sizeof(index_path));
+            strcpy(index_path, ads_index_path);
+        }else if(method == 20){
+            Matrix<float> P(transformation_path);
+            adsampling::project_table = Matrix<float>(transed_data_path);
+            StopW stopw = StopW();
+            adsampling::queries_project = mul(Q, P);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            adsampling::D = Q.d;
+            adsampling::epsilon0 = ads_epsilon0;
+            adsampling::delta_d = ads_delta_d;
+            adsampling::init_ratios();
+        }else if(method == 3){
+            paa::paa_table = Matrix<float>(paa_path);
+            StopW stopw = StopW();
+            paa::queries_paa = to_paa(Q, paa_segment);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            paa::D = Q.d;
+            paa::segment_num = paa_segment;
+            paa::len_per_seg = paa::D / paa::segment_num;
+        }else if(method == 4 || method == 41){
+            cout << setprecision(2) << lsh_p_tau;
+            if(method == 41) cout << "tight BSF";
+            cout <<endl;
+            Matrix<float> P(lsh_trans_path);
+            lsh::lsh_table = Matrix<float>(lsh_path);
+            StopW stopw = StopW();
+            lsh::queries_lsh = mul(Q, P);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            lsh::D = Q.d;
+            lsh::probQ = lsh_p_tau;
+            lsh::lowdim = P.d;
+            lsh::initialize();
+        }else if(method == 50){
+            Matrix<float> P(svd_trans_path);
+            svd::svd_table = Matrix<float>(svd_path);
+            StopW stopw = StopW();
+            svd::queries_svd = mul(Q, P);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            svd::D = Q.d;
+            svd::delta_d = pca_delta_d;
+        }else if(method == 5){
+            cout << pq_epsilon << endl;
+            Matrix<float> P(svd_trans_path);
+            // svd::svd_table = Matrix<float>(svd_path);
+            StopW stopw = StopW();
+            Q = mul(Q, P);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            svd::D = Q.d;
+            svd::delta_d = pca_delta_d;
+            memset(index_path, 0, sizeof(index_path));
+            strcpy(index_path, svd_index_path);
+        } else if(method == 8 || method == 81){
+            svd::D = Q.d;
+            svd::delta_d = pca_delta_d;
+            svd::initialize(pca_delta_d);
+            Matrix<float> P(pca_trans_path);
+            cout << pca_delta_d << " ";
+            if(method == 81) cout << " tight BSF";
+            cout << endl;
+            // svd::svd_table = Matrix<float>(svd_path);
+            StopW stopw = StopW();
+            Q = mul(Q, P);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            memset(index_path, 0, sizeof(index_path));
+            strcpy(index_path, pca_index_path);
+            if(method == 81){
+                auto ret = read_from_floats(pca_dist_distribution_path_str.c_str());
+                for(int i = 0; i < Q.d; ++i){
+                    ret[i] = 1.0 / ret[i];
+                }
+                svd::amp_ratios = ret;
             }
-            svd::amp_ratios = ret;
-        }
-    }else if(randomize == 80){
-        Matrix<float> P(pca_trans_path);
-        svd::svd_table = Matrix<float>(pca_path);
-        StopW stopw = StopW();
-        svd::queries_svd = mul(Q, P);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        svd::D = Q.d;
-        svd::delta_d = pca_delta_d;
-    }else if(randomize == 6 || randomize == 61 || randomize == 62){
-        pq::M = pq_m;
-        pq::Ks = pq_ks;
-        pq::D = Q.d;
-        pq::epsilon = pq_epsilon;
-        pq::sub_vec_len = Q.d / pq_m;
-        Matrix<float> tmp(pq_codebook_path, true);
-        pq::init_codebook(tmp);
-        pq::pq_codes_base = Matrix<int>(pq_codes_path);
-        pq::pq_codes_base.M = pq::pq_codes_base.d;
-        // svd::svd_table = Matrix<float>(svd_path);
-        StopW stopw = StopW();
-        pq::calc_dist_book(Q);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;   
-        cout << pq_epsilon << " ";
-        if(randomize == 62){
-            cout << qeo_check_threshold << " " << qeo_check_num;
-            pq::qeo_check_threshold = qeo_check_threshold;
-            pq::qeo_check_num = qeo_check_num;
-        }
-        cout << endl;
-    }else if(randomize == 7 || randomize == 71 || randomize == 72){
-        pq::M = pq_m;
-        pq::Ks = pq_ks;
-        pq::D = Q.d;
-        pq::epsilon = pq_epsilon;
-        pq::sub_vec_len = Q.d / pq_m;
-        Matrix<float> tmp(opq_codebook_path, true);
-        pq::init_codebook(tmp);
-        Matrix<float>Rotation(opq_rotation_path);
-        pq::pq_codes_base = Matrix<int>(opq_codes_path);
-        pq::pq_codes_base.M = pq::pq_codes_base.d;
-        // svd::svd_table = Matrix<float>(svd_path);
-        StopW stopw = StopW();
-        auto rotQ = mul(Q, Rotation);
-        pq::calc_dist_book(rotQ);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        cout << pq_epsilon << " ";
-        if(randomize == 72){
-            pq::qeo_check_threshold = qeo_check_threshold;
-            pq::qeo_check_num = qeo_check_num;
-            cout << qeo_check_threshold << " " << qeo_check_num;
-        }
-        cout << endl;
-    } else if(randomize == 9){  // DWT
-        cout << dwt_delta_d << " ";
-        if(randomize == 91) cout << " tight BSF";
-        cout << endl;
-        dwt::initialize(dwt_delta_d);
-        StopW stopw = StopW();
-        // TODO: dwt for query should be done in C++
-        Q = Matrix<float>(dwt_query_path);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        dwt::D = Q.d;
-        // dwt::delta_d = svd_delta_d;
-        memset(index_path, 0, sizeof(index_path));
-        strcpy(index_path, dwt_index_path);
-    } else if(randomize == 10){ // finger
-        cout << finger_ratio << " ";
-        if(randomize == 101) cout << " tight BSF";
-        cout << endl;
-        finger::P = Matrix<float>(finger_projection_path);
-        finger::bs_dres = Matrix<float>(finger_b_dres_path);
-        finger::c_2s = Matrix<float>(finger_c_2_path);
-        finger::c_Ps = Matrix<float>(finger_c_P_path);
-        finger::start_idxs = Matrix<int>(finger_start_idx_path);
-        finger::ratio = finger_ratio;
-        finger::D = Q.d;
-        finger::lsh_dim = finger_lsh_dim;
-        Matrix<int> sgn_d_res_Ps = Matrix<int>(finger_sgn_dres_P_path);
-        unsigned int edge_num = sgn_d_res_Ps.n;
-        finger::binary_sgn_d_res_Ps = vector<unsigned long long>();
-        for(int i = 0; i < edge_num; i++){
-            finger::binary_sgn_d_res_Ps.push_back(
-                finger::get_binary_sgn_from_array(sgn_d_res_Ps[i])
-            );
-        }
+        }else if(method == 80){
+            Matrix<float> P(pca_trans_path);
+            svd::svd_table = Matrix<float>(pca_path);
+            StopW stopw = StopW();
+            svd::queries_svd = mul(Q, P);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            svd::D = Q.d;
+            svd::delta_d = pca_delta_d;
+        }else if(method == 6 || method == 61 || method == 62){
+            pq::M = pq_m;
+            pq::Ks = pq_ks;
+            pq::D = Q.d;
+            pq::epsilon = pq_epsilon;
+            pq::sub_vec_len = Q.d / pq_m;
+            Matrix<float> tmp(pq_codebook_path, true);
+            pq::init_codebook(tmp);
+            pq::pq_codes_base = Matrix<int>(pq_codes_path);
+            pq::pq_codes_base.M = pq::pq_codes_base.d;
+            // svd::svd_table = Matrix<float>(svd_path);
+            StopW stopw = StopW();
+            pq::calc_dist_book(Q);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;   
+            cout << pq_epsilon << " ";
+            if(method == 62){
+                cout << qeo_check_threshold << " " << qeo_check_num;
+                pq::qeo_check_threshold = qeo_check_threshold;
+                pq::qeo_check_num = qeo_check_num;
+            }
+            cout << endl;
+        }else if(method == 7 || method == 71 || method == 72){
+            pq::M = pq_m;
+            pq::Ks = pq_ks;
+            pq::D = Q.d;
+            pq::epsilon = pq_epsilon;
+            pq::sub_vec_len = Q.d / pq_m;
+            Matrix<float> tmp(opq_codebook_path, true);
+            pq::init_codebook(tmp);
+            Matrix<float>Rotation(opq_rotation_path);
+            pq::pq_codes_base = Matrix<int>(opq_codes_path);
+            pq::pq_codes_base.M = pq::pq_codes_base.d;
+            // svd::svd_table = Matrix<float>(svd_path);
+            StopW stopw = StopW();
+            auto rotQ = mul(Q, Rotation);
+            pq::calc_dist_book(rotQ);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            cout << pq_epsilon << " ";
+            if(method == 72){
+                pq::qeo_check_threshold = qeo_check_threshold;
+                pq::qeo_check_num = qeo_check_num;
+                cout << qeo_check_threshold << " " << qeo_check_num;
+            }
+            cout << endl;
+        } else if(method == 9){  // DWT
+            cout << dwt_delta_d << " ";
+            if(method == 91) cout << " tight BSF";
+            cout << endl;
+            dwt::initialize(dwt_delta_d);
+            StopW stopw = StopW();
+            // TODO: dwt for query should be done in C++
+            Q = Matrix<float>(dwt_query_path);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            dwt::D = Q.d;
+            // dwt::delta_d = svd_delta_d;
+            memset(index_path, 0, sizeof(index_path));
+            strcpy(index_path, dwt_index_path);
+        } else if(method == 10){ // finger
+            cout << finger_ratio << " ";
+            if(method == 101) cout << " tight BSF";
+            cout << endl;
+            finger::P = Matrix<float>(finger_projection_path);
+            finger::bs_dres = Matrix<float>(finger_b_dres_path);
+            finger::c_2s = Matrix<float>(finger_c_2_path);
+            finger::c_Ps = Matrix<float>(finger_c_P_path);
+            finger::start_idxs = Matrix<int>(finger_start_idx_path);
+            finger::ratio = finger_ratio;
+            finger::D = Q.d;
+            finger::lsh_dim = finger_lsh_dim;
+            Matrix<int> sgn_d_res_Ps = Matrix<int>(finger_sgn_dres_P_path);
+            unsigned int edge_num = sgn_d_res_Ps.n;
+            finger::binary_sgn_d_res_Ps = vector<unsigned long long>();
+            for(int i = 0; i < edge_num; i++){
+                finger::binary_sgn_d_res_Ps.push_back(
+                    finger::get_binary_sgn_from_array(sgn_d_res_Ps[i])
+                );
+            }
 
-        StopW stopw = StopW();
-        finger::q_Ps = mul(Q, finger::P);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-    } else if(randomize == 11){  // SEANet
-        cout << seanet_ratio << endl;
-        seanet::lsh_table = Matrix<float>(seanet_data_path);
-        StopW stopw = StopW();
-        seanet::queries_lsh = Matrix<float>(seanet_query_path);
-        rotation_time = stopw.getElapsedTimeMicro() / Q.n;
-        seanet::D = Q.d;
-        seanet::lowdim = seanet::queries_lsh.d;
-        seanet::initialize();
-        seanet::ratio = seanet_ratio;
+            StopW stopw = StopW();
+            finger::q_Ps = mul(Q, finger::P);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+        } else if(method == 11){  // SEANet
+            cout << seanet_ratio << endl;
+            seanet::lsh_table = Matrix<float>(seanet_data_path);
+            StopW stopw = StopW();
+            seanet::queries_lsh = Matrix<float>(seanet_query_path);
+            rotation_time = stopw.getElapsedTimeMicro() / Q.n;
+            seanet::D = Q.d;
+            seanet::lowdim = seanet::queries_lsh.d;
+            seanet::initialize();
+            seanet::ratio = seanet_ratio;
+        }
+       
+        L2Space space(Q.d);   
+        cerr << "L2 space" << endl;
+        cerr << "Read index from " << index_path << endl;
+        auto appr_alg = new HierarchicalNSW<float>(&space, index_path, false);
+        cerr << "max level: " << appr_alg->maxlevel_ << endl;
+        
+        vector<std::priority_queue<std::pair<float, labeltype >>> answers;
+        get_gt(G.data, Q.data, appr_alg->max_elements_, Q.n, space, Q.d, answers, k, subk, *appr_alg);
+        // ProfilerStart("../prof/svd-profile.prof");
+        // test_vs_recall(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method);
+        test_performance(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method);
+        // test_lb_recall(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method);
+        // ProfilerStop();
+
+    }else if(data_type == 1){
+        Matrix<uint8_t> Q(query_path);
+        
+        Q.n = Q.n > q_num ? q_num : Q.n;
+        cerr << "Query number = " << Q.n << endl;
+
+        L2SpaceU8 space(Q.d);
+        std::cerr << "L2 space (UINT 8)" << endl;
+        auto appr_alg = new HierarchicalNSW<int>(&space, index_path, false);
+        cerr << "max level: " << appr_alg->maxlevel_ << endl;
+        vector<std::priority_queue<std::pair<int, labeltype >>> answers;
+        get_gt(G.data, Q.data, appr_alg->max_elements_, Q.n, space, Q.d, answers, k, subk, *appr_alg);
+        // ProfilerStart("../prof/svd-profile.prof");
+        test_vs_recall(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method);
+
+    }else if(data_type == 2){
+        Matrix<int8_t> Q(query_path);
+        
+        Q.n = Q.n > q_num ? q_num : Q.n;
+        cerr << "Query number = " << Q.n << endl;
+
+        L2SpaceI8 space(Q.d);
+        std::cerr << "L2 space (INT 8)" << endl;
+        auto appr_alg = new HierarchicalNSW<int>(&space, index_path, false);
+        cerr << "max level: " << appr_alg->maxlevel_ << endl;
+        vector<std::priority_queue<std::pair<int, labeltype >>> answers;
+        get_gt(G.data, Q.data, appr_alg->max_elements_, Q.n, space, Q.d, answers, k, subk, *appr_alg);
+        // ProfilerStart("../prof/svd-profile.prof");
+        test_vs_recall(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method);
+
     }
-    
-    Q.n = Q.n > 500 ? 500 : Q.n;
-    L2Space space(Q.d);   
-    cerr << "L2 space" << endl;
     // InnerProductSpace space(Q.d);
     // cerr << "IP space" << endl;
-    HierarchicalNSW<float> *appr_alg = new HierarchicalNSW<float>(&space, index_path, false);
-    size_t k = G.d;
-
-    vector<std::priority_queue<std::pair<float, labeltype >>> answers;
-
-    get_gt(G.data, Q.data, appr_alg->max_elements_, Q.n, space, Q.d, answers, k, subk, *appr_alg);
-
-    // ProfilerStart("../prof/svd-profile.prof");
-    test_vs_recall(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, randomize);
-    // ProfilerStop();
 
     return 0;
 }

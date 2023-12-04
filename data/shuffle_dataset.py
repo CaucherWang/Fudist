@@ -28,7 +28,7 @@ def ibin_write(x, path: str):
 
 
 source = '/home/hadoop/wzy/dataset/'
-datasets = ['yandex-text2image1M']
+datasets = ['deep1M']
 if __name__ == '__main__':
     for dataset in datasets:
         dir = os.path.join(source, dataset)
