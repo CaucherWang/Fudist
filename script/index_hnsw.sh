@@ -1,11 +1,11 @@
 
 cd ..
 
-efConstruction=500
-M=16
-data='deep'
+efConstruction=2000
+M=100
+data='rand100'
 
-# g++ -o ./src/index_hnsw ./src/index_hnsw.cpp -I ./src/ -O3 -mavx2 -fopenmp
+g++ -o ./src/index_hnsw ./src/index_hnsw.cpp -I ./src/ -O3 -mavx2 -fopenmp
 
 
 echo "Indexing - ${data}"
@@ -13,8 +13,8 @@ echo "Indexing - ${data}"
 data_path=./data/${data}
 index_path=./data/${data}
 
-data_file="${data_path}/${data}_base.fvecs_shuf8"
-index_file="${index_path}/${data}_ef${efConstruction}_M${M}.index_shuf8"
+data_file="${data_path}/${data}_base.fvecs_shuf3"
+index_file="${index_path}/${data}_ef${efConstruction}_M${M}.index_plain_shuf3"
 ./src/index_hnsw -t float -d $data_file -i $index_file -e $efConstruction -m $M
 
 # data_file="${data_path}/O${data}_base.fvecs"

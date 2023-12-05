@@ -1,30 +1,6 @@
 import numpy as np
 import os
-import struct
 
-def fbin_read(fname: str):
-    a = np.memmap(fname, dtype='int32', mode='r')
-    # a = np.fromfile(fname + ".fbin", dtype='int32')
-    num = a[0]
-    d = a[1]
-    print(f"{num} * {d}")
-    return a[2:].reshape(-1, d)[:num, :].copy().view('float32')
-
-def fbin_write(x, path: str):
-    x = x.astype('float32')
-    f = open(path, "wb")
-    n, d = x.shape
-    np.array([n, d], dtype='int32').tofile(f)
-    x.tofile(f)
-    
-def rand_select(nq, nx):
-    # randomly select nq numbers from [0,nx)
-    return np.random.choice(nx, nq, replace=False)
-
-def ibin_write(x, path: str):
-    x = x.astype('int32')
-    f = open(path, "wb")
-    x.tofile(f)
 
 
 source = '/home/hadoop/wzy/dataset/'

@@ -93,11 +93,12 @@ int main(int argc, char * argv[]) {
             std::cerr << "L2 space (FLOAT) " << endl;
             HierarchicalNSW<float>* appr_alg = new HierarchicalNSW<float> (&space, N, M, efConstruction);
 
+            cerr << " will write index to " << index_path << endl;
             int curr = 0;
         #pragma omp parallel for
             for(int i=0;i<N;i++){
-                appr_alg->addPoint(X->data + i * D, i);
-                // appr_alg->addPointPlain_with_id(X->data + i * D, i, i);
+                // appr_alg->addPoint(X->data + i * D, i);
+                appr_alg->addPointPlain_with_id(X->data + i * D, i, i);
                 #pragma omp critical
                 {
                     if(++curr % report == 0){

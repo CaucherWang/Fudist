@@ -605,7 +605,7 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
                 if(tmp < lowk){
                     lowef = curef+1;
                 }else{
-                    success = metric->ndc;
+                    success = metric.ndc;
                     if(highef == curef)
                         break;
                     highef = curef;
@@ -616,7 +616,7 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
                 flag = true;
             }
             else if(tmp >= lowk){
-                ret[i] = metric->ndc;
+                ret[i] = metric.ndc;
                 flag = true;
             }
             // if(tmp > highk){
@@ -700,9 +700,9 @@ int main(int argc, char * argv[]) {
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
     int method = 0;
-    string data_str = "glove1.2m";   // dataset name
+    string data_str = "rand100";   // dataset name
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
-    string M_str ="16"; // 8 for msong,mnist,cifar  48 for nuswide
+    string M_str ="64"; // 8 for msong,mnist,cifar  48 for nuswide
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:", longopts, &ind);
@@ -736,7 +736,7 @@ int main(int argc, char * argv[]) {
     string base_path_str = "../data";
     string result_base_path_str = "../results";
     string ef_str = "500"; 
-    string exp_name = "perform_variance0.86";
+    string exp_name = "perform_variance0.9";
     string index_postfix = "_plain";
     string query_postfix = "";
     // string index_postfix = "";
@@ -940,7 +940,7 @@ int main(int argc, char * argv[]) {
     cerr << "ground truth path: " << groundtruth_path << endl;
     Matrix<unsigned> G(groundtruth_path);
     size_t k = G.d;
-    unsigned q_num = 1000000;
+    unsigned q_num = 100654660;
 
     if(data_type == 0){
         cerr << "query path: " << query_path << endl;

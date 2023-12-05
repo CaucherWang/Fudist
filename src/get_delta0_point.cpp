@@ -727,8 +727,8 @@ void get_me_exhausted_from_delta0_pointt_recall_prob(vector<vector<int>>& G, int
 int main(int argc, char * argv[]) {
 
     int method = 0; // 0: kgraph 1: hnsw 2: nsg
-    int purpose = 0; // 0: get delta0 1: get me_exhausted
-    string data_str = "rand100";   // dataset name
+    int purpose = 1; // 0: get delta0 1: get me_exhausted
+    string data_str = "gauss100";   // dataset name
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
     int subk=50;
     float recall = 0.90;

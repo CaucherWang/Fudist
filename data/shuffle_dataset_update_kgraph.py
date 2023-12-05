@@ -1,3 +1,4 @@
+from types import new_class
 import numpy as np
 import os
 from utils import *
@@ -14,9 +15,18 @@ def update_gt(gt, original_positions):
             gt[i][j] = original_positions[gt[i][j]]
     return gt
 
+def update_kgraph(kgraph, old2new):
+    # update the kgraph
+    new_graph = np.zeros(kgraph.shape, dtype=np.int32)
+    for i in range(kgraph.shape[0]):
+        cur_row = old2new[i]
+        for j in range(kgraph.shape[1]):
+            new_graph[cur_row][j] = old2new[kgraph[i][j]]
+    return new_graph
+
 source = './data/'
-datasets = ['gauss100']
-shuf_num = 8
+datasets = ['rand100']
+shuf_num = 3
 if __name__ == '__main__':
     for dataset in datasets:
         dir = os.path.join(source, dataset)
@@ -30,6 +40,7 @@ if __name__ == '__main__':
         shuf_gt_easy_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_easy_shuf{shuf_num}')
         shuf_data_file = os.path.join(dir, f'{dataset}_base.fvecs_shuf{shuf_num}')
         pos_file = os.path.join(dir, f'{dataset}_shuf{shuf_num}.ibin')
+        kgraph_path = os.path.join(dir, f'{dataset}_self_groundtruth.ivecs_clean')
         X = read_fvecs(data_file)
         Q = read_fvecs(query_file)
         # gt_shuf = read_ivecs(shuf_gt_file)
@@ -41,23 +52,11 @@ if __name__ == '__main__':
         # Get the number of rows in the matrix
         rows = X.shape[0]
         # Create an array of indices representing the original positions
-        original_positions = np.arange(rows)
-        # Shuffle the original positions
-        np.random.shuffle(original_positions)
+        original_positions = read_ibin_simple(pos_file)
         old2new = [ 0 for i in range(rows) ]
         for i in range(rows):
             old2new[original_positions[i]] = i
-        # Create a shuffled matrix using the shuffled positions
-        X_new = X[original_positions]
-        gt = update_gt(gt, old2new)
-        # gt_hard = update_gt(gt_hard, old2new)
-        # gt_easy = update_gt(gt_easy, old2new)        
-        
-        print(X_new.shape)
-        write_fvecs(shuf_data_file, X_new)
-        # # to_ivecs(pos_file, original_positions)
-        write_ibin_simple(pos_file, original_positions)
-        write_ivecs(shuf_gt_file, gt)
-        # write_ivecs(shuf_gt_hard_file, gt_hard)
-        # write_ivecs(shuf_gt_easy_file, gt_easy)
+            
+        new_graph = update_kgraph(gt, old2new)
+
         

@@ -253,8 +253,8 @@ def get_density_scatter(k_occur, lid):
     # plt.xlabel('local intrinsic dimensionality')
     # plt.ylabel('1NN distance')
     # plt.tight_layout()
-    plt.xlim(0, 50000)
-    plt.ylim(0, 50000)
+    # plt.xlim(0, 50000)
+    # plt.ylim(0, 50000)
     # plt.tight_layout()
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
     # print(f'save to figure ./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
@@ -637,17 +637,17 @@ def get_me(G, GT_list, delta0_point, K, recall):
 
 source = './data/'
 result_source = './results/'
-dataset = 'deep'
+dataset = 'rand100'
 idx_postfix = '_plain'
 efConstruction = 500
-Kbuild = 500
+Kbuild = 30
 M = 16
 R = 32
 L = 40
 C = 500
-target_recall = 0.98
+target_recall = 0.9
 target_prob = 0.96
-select = 'kgraph'
+select = 'hnsw'
 if __name__ == "__main__":
     base_path = os.path.join(source, dataset, f'{dataset}_base.fvecs')
     # graph_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_K{Kbuild}.nsw.index')
@@ -757,7 +757,7 @@ if __name__ == "__main__":
         delta0_point_cpp = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_delta0_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}'))
         me_exhausted_cpp = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}'))
         # diff = np.where(delta0_point != delta0_point_cpp)
-        G = read_ibin(standard_hnsw_path)
+        # G = read_ibin(standard_hnsw_path)
         query_performance = np.array(resolve_performance_variance_log(query_performance_log_path))
         me_exhausted = me_exhausted_cpp
         # query_performances = [query_performance]

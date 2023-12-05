@@ -286,7 +286,7 @@ def resolve_performance_variance_log(file_path):
 
 source = './data/'
 result_source = './results/'
-dataset = 'deep'
+dataset = 'rand100'
 idx_postfix = '_plain_1th'
 efConstruction = 500
 Kbuild = 100
@@ -314,15 +314,15 @@ if __name__ == "__main__":
     for i in range(3, 12):
         query_performance_log_paths.append(os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance.log_plain_shuf{i}'))
 
-    in_ds_kgraph_query_performance = np.array(resolve_performance_variance_log(in_ds_kgraph_query_performance_log_path))
-    kgraph_query_performance = np.array(resolve_performance_variance_log(kgraph_query_performance_log_path))
-    query_performance = np.array(resolve_performance_variance_log(query_performance_log_path))
-    query_performances = [query_performance]
-    for i in range(9):
-        query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_paths[i])))
-    query_performances = np.array(query_performances)
+    # in_ds_kgraph_query_performance = np.array(resolve_performance_variance_log(in_ds_kgraph_query_performance_log_path))
+    # kgraph_query_performance = np.array(resolve_performance_variance_log(kgraph_query_performance_log_path))
+    # query_performance = np.array(resolve_performance_variance_log(query_performance_log_path))
+    # query_performances = [query_performance]
+    # for i in range(9):
+    #     query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_paths[i])))
+    # query_performances = np.array(query_performances)
     
-    query_performance_avg = np.sum(query_performances, axis=0) / len(query_performances)
+    # query_performance_avg = np.sum(query_performances, axis=0) / len(query_performances)
 
     # recalls = []
     # with open(result_path, 'r') as f:
@@ -350,7 +350,7 @@ if __name__ == "__main__":
     # write_ibin_simple(hnsw_ind_path, indegree)
     # indegree = read_ibin_simple(hnsw_ind_path)
     # revG = get_reversed_graph_list(G)
-    print(np.where(GT == 885271))
+    # print(np.where(GT == 885271))
     
     # KGraph_clean = clean_kgraph(KGraph)
     # write_ivecs(os.path.join(source, dataset, f'{dataset}_self_groundtruth.ivecs_clean'), KGraph_clean)

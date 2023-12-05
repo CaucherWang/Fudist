@@ -181,7 +181,7 @@ int get_entry_point(int range){
 template<typename data_t, typename dist_t>
 static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, KGraph *appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<dist_t, int >>> &answers, size_t k) {
-    double target_recall = 0.98;
+    double target_recall = 0.9;
     int lowk = ceil(k * target_recall);
     vector<int>ret(qsize, 0);
 
@@ -312,10 +312,10 @@ int main(int argc, char * argv[]) {
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
     int method = 0;
-    string data_str = "sift";   // dataset name
+    string data_str = "rand100";   // dataset name
     string kgraph_od = "";
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
-    int KG = 500;
+    int KG = 100;
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:", longopts, &ind);
@@ -333,12 +333,12 @@ int main(int argc, char * argv[]) {
     int subk=50;
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    string exp_name = "perform_variance0.98";
+    string exp_name = "perform_variance0.9";
     // string exp_name = "";
     string index_postfix = "_clean";
     string query_postfix = "";
     // string index_postfix = "";
-    string shuf_postfix = "";
+    string shuf_postfix = "_shuf3";
 
     string index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_self_groundtruth" + kgraph_od + ".ivecs" + index_postfix + shuf_postfix;
     string data_path_str = base_path_str + "/" + data_str + "/" + data_str + "_base.fvecs" + shuf_postfix;

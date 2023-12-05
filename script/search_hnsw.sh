@@ -3,7 +3,7 @@ cd ..
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -march=native
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -ffast-math -march=native
-g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -ffast-math -march=native
+g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -ffast-math -march=native -fopenmp
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -lprofiler
 # path=./data/
 # result_path=./results/
