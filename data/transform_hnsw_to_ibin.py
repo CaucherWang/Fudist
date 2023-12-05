@@ -298,12 +298,12 @@ def shuffled_hnsw_to_standard_form(graph, new2old, M):
           
 source = './data/'
 result_source = './results/'
-dataset = 'glove1.2m'
+dataset = 'rand100'
 idx_postfix = '_plain'
 shuf_postfix = ''
-efConstruction = 500
+efConstruction = 2000
 Kbuild = 16
-M=16
+M=100
 if __name__ == "__main__":
     base_path = os.path.join(source, dataset, f'{dataset}_base.fvecs')
     # graph_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_K{Kbuild}.nsw.index')
@@ -313,7 +313,7 @@ if __name__ == "__main__":
     
     
     Q = read_fvecs(query_path)
-    hnsw = read_hnsw_index_unaligned(index_path, Q.shape[1])
+    hnsw = read_hnsw_index_aligned(index_path, Q.shape[1])
     new_hnsw = shuffled_hnsw_to_standard_form(hnsw, np.arange(len(hnsw)), M)
     write_ibin(standard_hnsw_path, new_hnsw)
 

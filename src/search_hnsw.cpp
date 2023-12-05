@@ -702,7 +702,8 @@ int main(int argc, char * argv[]) {
     int method = 0;
     string data_str = "rand100";   // dataset name
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
-    string M_str ="64"; // 8 for msong,mnist,cifar  48 for nuswide
+    string M_str ="100"; // 8 for msong,mnist,cifar  48 for nuswide
+    string ef_str = "2000"; 
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:", longopts, &ind);
@@ -731,16 +732,15 @@ int main(int argc, char * argv[]) {
     int finger_lsh_dim = 64;
     float finger_ratio = 1.5;
     float seanet_ratio = 1.5;
-
     int subk=50;
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    string ef_str = "500"; 
+    
     string exp_name = "perform_variance0.9";
     string index_postfix = "_plain";
     string query_postfix = "";
     // string index_postfix = "";
-    string shuf_postfix = "";
+    string shuf_postfix = "_shuf6";
     switch(method){
         case 0:
             break;

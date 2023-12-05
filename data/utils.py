@@ -250,13 +250,19 @@ def get_graph_quality(graph: np.ndarray, Kgraph, Kgt):
     N = graph.shape[0]
     d = graph.shape[1]
     cnt = 0
+    total_cnt = 0
     for i in range(N):
         if i % 100000 == 0:
             print(i)
         exact_neighbors = Kgraph[i][:Kgt + 1]
         recall_list = np.intersect1d(exact_neighbors, graph[i])
+        # find the first element in graph[i] that is less than zero
+        for j in graph[i]:
+            if j < 0:
+                break
+            total_cnt += 1
         cnt += recall_list.shape[0]
-    return cnt, cnt / (N * Kgt)
+    return cnt, cnt / total_cnt
 
 # @njit
 def get_graph_quality_list(graph: list, Kgraph, Kgt):
@@ -598,6 +604,7 @@ def get_neighbors_with_external_label(data_level_0, external_label, size_data_pe
     return get_neighbors_with_internal_id(data_level_0, internal_id, size_data_per_element)
 
 def read_hnsw_index_unaligned(index_path, dim):
+    print(f'read hnsw index from {index_path}')
     index = read_hnsw_index(index_path, dim)
     data_size = index.get_current_count()
     print(f"totally {data_size} items in index")

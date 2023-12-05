@@ -13,8 +13,8 @@ echo "Indexing - ${data}"
 data_path=./data/${data}
 index_path=./data/${data}
 
-data_file="${data_path}/${data}_base.fvecs_shuf3"
-index_file="${index_path}/${data}_ef${efConstruction}_M${M}.index_plain_shuf3"
+data_file="${data_path}/${data}_base.fvecs_shuf7"
+index_file="${index_path}/${data}_ef${efConstruction}_M${M}.index_plain_shuf7"
 ./src/index_hnsw -t float -d $data_file -i $index_file -e $efConstruction -m $M
 
 # data_file="${data_path}/O${data}_base.fvecs"

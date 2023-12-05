@@ -48,8 +48,9 @@ def get_density_scatter(k_occur, lid):
 
     fig = plt.figure(figsize=(12,10))
     using_mpl_scatter_density(fig, x, y)
-    # plt.xlabel('k-occurrence (450)')
+    # plt.xlabel('k-occurrence (500)')
     # plt.xlabel('Query difficulty')
+    plt.xlabel('LID')
     # plt.xlabel('reach_delta_0_rigorous')
     # plt.xlabel('metric for dynamic bound')
     # plt.xlabel('delta_0')
@@ -58,11 +59,11 @@ def get_density_scatter(k_occur, lid):
     # plt.xlabel(r'$Kgraph-100-\hat{ME^{0.96}_{\delta_0}}$@0.98-exhausted')
     # plt.xlabel(r'$ME^{\forall}_{\delta_0}-reach$@0.98')
     # plt.ylabel(r'NDC (recall@50>0.98)')
-    # plt.ylabel('HNSW NDC')
+    plt.ylabel('HNSW NDC')
     # plt.xlabel('local intrinsic dimensionality')
     # plt.ylabel('1NN distance')
     # plt.tight_layout()
-    plt.xlim(0, 100000)
+    # plt.xlim(0, 100000)
     plt.ylim(0, 100000)
     # plt.tight_layout()
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
@@ -103,9 +104,9 @@ source = './data/'
 result_source = './results/'
 dataset = 'rand100'
 idx_postfix = '_plain'
-efConstruction = 500
 Kbuild = 500
-M = 64
+M = 100
+efConstruction = 2000
 R = 32
 L = 40
 C = 500
@@ -128,10 +129,6 @@ if __name__ == "__main__":
     standard_hnsw_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}_hnsw.ibin{idx_postfix}')
     reversed_kgraph_path = os.path.join(source, dataset, f'{dataset}_self_groundtruth.ivecs_reversed')
     result_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_.log{idx_postfix}_unidepth-level')
-    ma_dist_path = os.path.join(source, dataset, f'{dataset}_ma_distance.fbin')
-    ma_base_dist_path = os.path.join(source, dataset, f'{dataset}_ma_base_distance.fbin')
-    me_greedy_path = os.path.join(source, dataset, f'{dataset}_me_greedy.ibin')
-    me_greedy_path_opt = os.path.join(source, dataset, f'{dataset}_me_greedy.ibin_usg')
     delta_result_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K{Kbuild}_delta.log')
     delta0_point_path = os.path.join(source, dataset, f'{dataset}_delta0_point_K{Kbuild}.ibin')
     self_delta0_max_knn_rscc_point_recall_path = os.path.join(source, dataset, f'{dataset}_self_delta0_max_knn_rscc_point_recall{target_recall}_K{Kbuild}.ibin')
@@ -149,14 +146,21 @@ if __name__ == "__main__":
                                                    '_K100.ibin_clean'))
     
     
-    # K = 100
+    # K = 500
+    G = read_ivecs(kgraph_path)
     # ind_path = os.path.join(source, dataset, f'{dataset}_ind_{K}.ibin')
-    # G = read_ivecs(kgraph_path)
     # n_rknn = get_reversed_knn_number(G, K)
     # write_ibin_simple(ind_path, n_rknn)
     # n_rknn = read_ibin_simple(ind_path)
     # GT = read_ivecs(GT_path)
     # k_occur = get_query_k_occur(GT, n_rknn)
+    
+    # GT_dist = read_fvecs(GT_dist_path)
+    # q_lids = get_lids(GT_dist[:, :50], 50)
+    
+    hnsw = read_ibin(standard_hnsw_path)
+    print(get_graph_quality(hnsw, G, 500))
+    exit(0)
     
     
     
@@ -165,12 +169,12 @@ if __name__ == "__main__":
     for i in range(1):
         query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_paths[i])))
     query_performances = np.array(query_performances)
-    # query_performance = np.median(query_performances, axis=0)        
-    kgraph_query_performance_recall_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K{Kbuild}_perform_variance{target_recall}.log_clean')
-    kgraph_query_performance_recall = np.array(resolve_performance_variance_log(kgraph_query_performance_recall_log_path))
+    query_performance = np.median(query_performances, axis=0)        
+    # kgraph_query_performance_recall_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K{Kbuild}_perform_variance{target_recall}.log_clean')
+    # kgraph_query_performance_recall = np.array(resolve_performance_variance_log(kgraph_query_performance_recall_log_path))
     
     # get_density_scatter(query_hardness, query_performances[0])
-    get_density_scatter(query_performances[0], query_performances[1])
+    get_density_scatter(q_lids, query_performance)
     
     
     
