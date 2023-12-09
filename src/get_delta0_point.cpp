@@ -657,7 +657,7 @@ void bfs_shortest_paths(vector<vector<int>>& subG, int source, unordered_set<int
 }
 
 
-int get_me_exhausted_from_delta0_pointt_recall_prob_atom(vector<vector<int>>& G, int k, unsigned* gt_list, int delta0_point,
+int get_me_exhausted_from_delta0_point_recall_prob_atom(vector<vector<int>>& G, int k, unsigned* gt_list, int delta0_point,
                                                     int recall, int prob){
     vector<pair<int, unordered_set<int>>> reachable_pairs;
     unordered_map<int,int> id2index;
@@ -706,7 +706,7 @@ int get_me_exhausted_from_delta0_pointt_recall_prob_atom(vector<vector<int>>& G,
 
 }
 
-void get_me_exhausted_from_delta0_pointt_recall_prob(vector<vector<int>>& G, int k, Matrix<unsigned> GT_list, vector<int>& delta0_point,
+void get_me_exhausted_from_delta0_point_recall_prob(vector<vector<int>>& G, int k, Matrix<unsigned> GT_list, vector<int>& delta0_point,
                                                     int recall, int prob, vector<int>&res){
     
     int cur = 0;
@@ -719,26 +719,85 @@ void get_me_exhausted_from_delta0_pointt_recall_prob(vector<vector<int>>& G, int
             }
         }
         auto gt_list = GT_list[i];
-        auto me_exhausted = get_me_exhausted_from_delta0_pointt_recall_prob_atom(G, k, gt_list, delta0_point[i], recall, prob);
+        auto me_exhausted = get_me_exhausted_from_delta0_point_recall_prob_atom(G, k, gt_list, delta0_point[i], recall, prob);
         res[i] = me_exhausted;
     }
 }
 
+
+int get_me_from_delta0_point_recall_prob_atom(vector<vector<int>>& G, int k, unsigned* gt_list, int delta0_point,
+                                                   int recall, int prob){
+    vector<pair<int, unordered_set<int>>> reachable_pairs;
+    unordered_map<int,int> id2index;
+    for(int i =0 ; i < delta0_point; ++i){
+        id2index[gt_list[i]] = i;
+    }
+
+    vector<vector<int>>subgraph;
+    // obtain subgraph
+    get_subgraph(G, gt_list, delta0_point, subgraph, id2index);
+
+    // obtain reachable pairs by bfs shortest path
+    get_reachable_pairs_from_delta_point_recall_prob(subgraph, k, gt_list, delta0_point, recall, prob, id2index, reachable_pairs);
+
+    if(reachable_pairs.size() == 0){
+        return delta0_point;
+    }
+
+
+    unordered_set<int> points_in_paths;
+    for(auto& p: reachable_pairs){
+        auto& src = p.first;
+        auto& dest = p.second;
+        bfs_shortest_paths(subgraph, src, dest, points_in_paths);
+    }
+
+    // The terminals themselves are also in ME_exhausted
+    for(auto &p:reachable_pairs){
+        auto& dest = p.second;
+        for(auto& d: dest){
+            points_in_paths.insert(d);
+        }
+    }
+
+    return points_in_paths.size();
+
+}
+
+
+void get_me_from_delta0_point_recall_prob(vector<vector<int>>& G, int k, Matrix<unsigned> GT_list, vector<int>& delta0_point,
+                                                    int recall, int prob, vector<int>&res){
+    
+    int cur = 0;
+#pragma omp parallel for
+    for(int i = 0; i < GT_list.n; ++i){
+        #pragma omp critical
+        {
+            if(++cur % 100 == 0){
+                std::cerr << "cur: " << cur << endl;
+            }
+        }
+        auto gt_list = GT_list[i];
+        auto me = get_me_from_delta0_point_recall_prob_atom(G, k, gt_list, delta0_point[i], recall, prob);
+        res[i] = me;
+    }
+}
+
+
 int main(int argc, char * argv[]) {
 
     int method = 0; // 0: kgraph 1: hnsw 2: nsg
-    int purpose = 1; // 0: get delta0 1: get me_exhausted
+    int purpose = 1; // 0: get delta0^p@Acc 1: get me_exhausted 2: get me^p_delta_0@Acc
     string data_str = "gauss100";   // dataset name
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
     int subk=50;
-    float recall = 0.90;
+    float recall = 0.94;
     float prob = 0.96;
     int recall_target = ceil(recall * subk);
     int prob_target = ceil(prob * subk);
 
     string base_path_str = "../data";
     string result_base_path_str = "../results";
-    // string exp_name = "perform_variance0.98";
     string exp_name = "";
     string index_postfix = "";
     string query_postfix = "";
@@ -776,7 +835,7 @@ int main(int argc, char * argv[]) {
         // kgraph
         index_postfix = "_clean";
         string kgraph_od = "";
-        int Kbuild = 30; 
+        int Kbuild =100; 
         index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_self_groundtruth" + kgraph_od + ".ivecs" + index_postfix + shuf_postfix;
         string delta0_path_str = result_prefix_str + "_delta0_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4) 
         + "_K" + to_string(Kbuild)  + ".ibin" + index_postfix + shuf_postfix + query_postfix;
@@ -796,7 +855,13 @@ int main(int argc, char * argv[]) {
             + "_K" + to_string(Kbuild) + ".ibin" + index_postfix + shuf_postfix + query_postfix;
             cerr << "result path: "<< result_path_str << endl;
             auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
-            get_me_exhausted_from_delta0_pointt_recall_prob(*index, subk, GT, *delta0_point, recall_target, prob_target, res);
+            get_me_exhausted_from_delta0_point_recall_prob(*index, subk, GT, *delta0_point, recall_target, prob_target, res);
+        }else if (purpose == 2){
+            result_path_str = result_prefix_str + "_me_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
+            + "_K" + to_string(Kbuild) + ".ibin" + index_postfix + shuf_postfix + query_postfix;
+            cerr << "result path: "<< result_path_str << endl;
+            auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
+            get_me_from_delta0_point_recall_prob(*index, subk, GT, *delta0_point, recall_target, prob_target, res);
         }
     }else if(method == 1){
         // hnsw
@@ -821,7 +886,7 @@ int main(int argc, char * argv[]) {
             + "_ef" + ef_str + "_M" + to_string(M) + ".ibin_hnsw" + index_postfix + shuf_postfix + query_postfix;
             cerr << "result path: "<< result_path_str << endl;
             auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
-            get_me_exhausted_from_delta0_pointt_recall_prob(*hnsw, subk, GT, *delta0_point, recall_target, prob_target, res);
+            get_me_exhausted_from_delta0_point_recall_prob(*hnsw, subk, GT, *delta0_point, recall_target, prob_target, res);
         }
     }else if(method == 2){
         // nsg
@@ -845,7 +910,7 @@ int main(int argc, char * argv[]) {
             + "_L" + to_string(L) + "_R" + to_string(R) + "_C" + to_string(C) + ".ibin_nsg" + index_postfix + shuf_postfix + query_postfix;
             cerr << "result path: "<< result_path_str << endl;
             auto delta0_point = read_ibin_simple(result_path_str.c_str());
-            get_me_exhausted_from_delta0_pointt_recall_prob(nsg->final_graph_, subk, GT, *delta0_point, recall_target, prob_target, res);
+            get_me_exhausted_from_delta0_point_recall_prob(nsg->final_graph_, subk, GT, *delta0_point, recall_target, prob_target, res);
         }
 
     }

@@ -2,6 +2,7 @@ import queue
 from turtle import circle
 from requests import get
 from sklearn.utils import deprecated
+from sympy import Q
 from utils import *
 from queue import PriorityQueue
 import os
@@ -50,21 +51,21 @@ def get_density_scatter(k_occur, lid):
     using_mpl_scatter_density(fig, x, y)
     # plt.xlabel('k-occurrence (500)')
     # plt.xlabel('Query difficulty')
-    plt.xlabel('LID')
+    # plt.xlabel('LID')
     # plt.xlabel('reach_delta_0_rigorous')
     # plt.xlabel('metric for dynamic bound')
     # plt.xlabel('delta_0')
     # plt.xlabel(r'$\delta_0^{\forall}-g@0.98$')
-    # plt.xlabel(r'$ME^{\forall}_{\delta_0}$@0.98-exhausted')
-    # plt.xlabel(r'$Kgraph-100-\hat{ME^{0.96}_{\delta_0}}$@0.98-exhausted')
+    # plt.xlabel(r'$ME^{0.96}_{\delta_0}$@0.98')
+    # plt.xlabel(r'$Kgraph-100-\hat{ME^{0.96}_{\delta_0}}$@0.90-exhausted')
     # plt.xlabel(r'$ME^{\forall}_{\delta_0}-reach$@0.98')
     # plt.ylabel(r'NDC (recall@50>0.98)')
-    plt.ylabel('HNSW NDC')
+    # plt.ylabel('HNSW NDC')
     # plt.xlabel('local intrinsic dimensionality')
     # plt.ylabel('1NN distance')
     # plt.tight_layout()
-    # plt.xlim(0, 100000)
-    plt.ylim(0, 100000)
+    plt.xlim(0, 100000)
+    plt.ylim(0, 200000)
     # plt.tight_layout()
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
     # print(f'save to figure ./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
@@ -100,17 +101,23 @@ def resolve_performance_variance_log_multi(file_path):
             ndcs.append(ndc)
         return ndcs
 
+params = {
+    'gauss100':{'M': 50, 'ef': 500},
+    'rand100': {'M': 100, 'ef': 2000},
+    'deep': {'M': 16, 'ef': 500},
+    'sift': {'M': 16, 'ef': 500},
+}
 source = './data/'
 result_source = './results/'
 dataset = 'rand100'
 idx_postfix = '_plain'
-Kbuild = 500
-M = 100
-efConstruction = 2000
+Kbuild = 499
+M = params[dataset]['M']
+efConstruction = params[dataset]['ef']
 R = 32
 L = 40
 C = 500
-target_recall = 0.9
+target_recall = 0.94
 target_prob = 0.96
 select = 'kgraph'
 if __name__ == "__main__":
@@ -139,18 +146,21 @@ if __name__ == "__main__":
     in_ds_kgraph_query_performance_recall_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K{Kbuild}_perform_variance{target_recall}.log_in-dataset')
     query_performance_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance{target_recall}.log_plain')
     query_performance_log_paths = []
-    for i in range(3, 11):
+    for i in range(3, 24):
         query_performance_log_paths.append(os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance{target_recall}.log_plain_shuf{i}'))
 
-    query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
-                                                   '_K100.ibin_clean'))
+    # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
+    #                                                '_K100.ibin_clean'))
     
+    # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
+    #                                                '_K500.ibin_clean'))
+
     
     # K = 500
-    G = read_ivecs(kgraph_path)
+    # G = read_ivecs(kgraph_path)
     # ind_path = os.path.join(source, dataset, f'{dataset}_ind_{K}.ibin')
-    # n_rknn = get_reversed_knn_number(G, K)
-    # write_ibin_simple(ind_path, n_rknn)
+    # # n_rknn = get_reversed_knn_number(G, K)
+    # # write_ibin_simple(ind_path, n_rknn)
     # n_rknn = read_ibin_simple(ind_path)
     # GT = read_ivecs(GT_path)
     # k_occur = get_query_k_occur(GT, n_rknn)
@@ -158,23 +168,33 @@ if __name__ == "__main__":
     # GT_dist = read_fvecs(GT_dist_path)
     # q_lids = get_lids(GT_dist[:, :50], 50)
     
-    hnsw = read_ibin(standard_hnsw_path)
-    print(get_graph_quality(hnsw, G, 500))
-    exit(0)
+    # hnsw = read_ibin(standard_hnsw_path)
+    # print(get_graph_quality(hnsw, G, 500))
+    # exit(0)
     
     
     
     query_performances = []
     query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_path)))
-    for i in range(1):
+    for i in range(9):
         query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_paths[i])))
+        print(query_performances[-1].shape, np.average(query_performances[-1]))
+    # reshape query_performances to a 2-d array
+    
     query_performances = np.array(query_performances)
-    query_performance = np.median(query_performances, axis=0)        
+    query_performances.reshape((query_performances.shape[0], query_performances[0].shape[0]))
+    query_performance = np.average(query_performances, axis=0)
+    print(query_performances.shape)
+    # half = int(query_performances.shape[0] / 2)
+    # query_performance1 = np.average(query_performances[:half], axis=0)
+    # query_performance2 = np.average(query_performances[half: ], axis=0)        
     # kgraph_query_performance_recall_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K{Kbuild}_perform_variance{target_recall}.log_clean')
     # kgraph_query_performance_recall = np.array(resolve_performance_variance_log(kgraph_query_performance_recall_log_path))
     
-    # get_density_scatter(query_hardness, query_performances[0])
-    get_density_scatter(q_lids, query_performance)
+    # get_density_scatter(query_performances[0], query_performances[1])
+    # get_density_scatter(query_performance1, query_performance2)
+    get_density_scatter(query_hardness, query_performance)
+    # get_density_scatter(query_hardness, query_performance)
     
     
     

@@ -16,7 +16,7 @@ def update_gt(gt, original_positions):
 
 source = './data/'
 datasets = ['sift']
-shuf_num = 12
+shuf_num = 11
 if __name__ == '__main__':
     for dataset in datasets:
         dir = os.path.join(source, dataset)
@@ -31,32 +31,22 @@ if __name__ == '__main__':
         shuf_data_file = os.path.join(dir, f'{dataset}_base.fvecs_shuf{shuf_num}')
         pos_file = os.path.join(dir, f'{dataset}_shuf{shuf_num}.ibin')
         X = read_fvecs(data_file)
-        Q = read_fvecs(query_file)
-        # gt_shuf = read_ivecs(shuf_gt_file)
         gt = read_ivecs(gt_file)[:, :500]
-        # gt_hard = read_ivecs(gt_hard_file)
-        # gt_easy = read_ivecs(gt_easy_file)
-        nx = X.shape[0]
-        
+
+
         # Get the number of rows in the matrix
         rows = X.shape[0]
         # Create an array of indices representing the original positions
-        original_positions = np.arange(rows)
+        original_positions = read_ibin_simple(pos_file)
         # Shuffle the original positions
-        np.random.shuffle(original_positions)
         old2new = [ 0 for i in range(rows) ]
         for i in range(rows):
             old2new[original_positions[i]] = i
         # Create a shuffled matrix using the shuffled positions
-        X_new = X[original_positions]
         gt = update_gt(gt, old2new)
         # gt_hard = update_gt(gt_hard, old2new)
         # gt_easy = update_gt(gt_easy, old2new)        
         
-        print(X_new.shape)
-        write_fvecs(shuf_data_file, X_new)
-        # # to_ivecs(pos_file, original_positions)
-        write_ibin_simple(pos_file, original_positions)
         write_ivecs(shuf_gt_file, gt)
         # write_ivecs(shuf_gt_hard_file, gt_hard)
         # write_ivecs(shuf_gt_easy_file, gt_easy)

@@ -568,7 +568,7 @@ static void test_lb_recall(data_t *massQ, size_t vecsize, size_t qsize, Hierarch
 template<typename data_t, typename dist_t>
 static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<dist_t> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive) {
-    double target_recall = 0.86;
+    double target_recall = 0.98;
     int lowk = ceil(k * target_recall);
     vector<int>ret(qsize, 0);
 
@@ -576,7 +576,7 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
 #pragma omp parallel for
     for(int i = 0; i < qsize; ++i){
         bool flag = false;
-        // if(i != 14)
+        // if(i !=3)
         //     continue;
         #pragma omp critical
         {
@@ -584,21 +584,20 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
                 cerr << index << " / " << qsize << endl;
         }
 
-        int lowef = k, highef, curef, tmp, bound = 100000;
+        int lowef = k, highef, curef, tmp, bound = 20000;
         long success = -1;
         Metric metric;
 
 
         for(int _ = 0; _ < 1 && !flag; ++_){
-            lowef = k; highef = bound;
+            lowef = 10; highef = bound;
             success = -1;
             while(lowef < highef){
                 curef = (lowef + highef) / 2;
                 adsampling::clear();
                 metric.clear();
-                appr_alg.setEf(curef);
 
-                std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive, &metric);  
+                std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive, &metric, curef);  
 
                 std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
                 tmp = recall(result, gt);
@@ -612,10 +611,18 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
                 }
             }
             if(success >= 0){
+                // if(success == 0){
+                //     cerr << i << endl;
+                //     exit(-1);
+                // }
                 ret[i] = success;
                 flag = true;
             }
             else if(tmp >= lowk){
+                // if(metric.ndc == 0){
+                //     cerr << i << endl;
+                //     exit(-1);
+                // }
                 ret[i] = metric.ndc;
                 flag = true;
             }
@@ -642,12 +649,15 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
                 curef = highef;
                 adsampling::clear();
                 metric.clear();
-                appr_alg.setEf(curef);
 
-                std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive, &metric);  
+                std::priority_queue<std::pair<dist_t, labeltype >> result = appr_alg.searchKnnPlain(massQ + vecdim * i, k, adaptive, &metric, curef);  
                 std::priority_queue<std::pair<dist_t, labeltype >> gt(answers[i]);
                 tmp = recall(result, gt);
                 if(tmp >= lowk){
+                    // if(metric.ndc == 0){
+                    //     cerr << i << endl;
+                    //     exit(-1);
+                    // }
                     ret[i] = metric.ndc;
                     flag = true;
                 }else if(curef >= bound){
@@ -664,6 +674,7 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
     }
 
     for(int i = 0; i < qsize; ++i){
+        assert(ret[i] > 0);
         cout << ret[i] << ",";
     }
     cout << endl;
@@ -700,10 +711,10 @@ int main(int argc, char * argv[]) {
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
     int method = 0;
-    string data_str = "rand100";   // dataset name
+    string data_str = "sift";   // dataset name
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
-    string M_str ="100"; // 8 for msong,mnist,cifar  48 for nuswide
-    string ef_str = "2000"; 
+    string M_str ="16"; // 8 for msong,mnist,cifar  48 for nuswide
+    string ef_str = "500"; 
 
     while(iarg != -1){
         iarg = getopt_long(argc, argv, "d:", longopts, &ind);
@@ -736,11 +747,11 @@ int main(int argc, char * argv[]) {
     string base_path_str = "../data";
     string result_base_path_str = "../results";
     
-    string exp_name = "perform_variance0.9";
+    string exp_name = "perform_variance0.98";
     string index_postfix = "_plain";
     string query_postfix = "";
     // string index_postfix = "";
-    string shuf_postfix = "_shuf6";
+    string shuf_postfix = "_shuf5";
     switch(method){
         case 0:
             break;

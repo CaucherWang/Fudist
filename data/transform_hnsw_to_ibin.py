@@ -301,9 +301,9 @@ result_source = './results/'
 dataset = 'rand100'
 idx_postfix = '_plain'
 shuf_postfix = ''
-efConstruction = 2000
+efConstruction = 500
 Kbuild = 16
-M=100
+M = 64
 if __name__ == "__main__":
     base_path = os.path.join(source, dataset, f'{dataset}_base.fvecs')
     # graph_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_K{Kbuild}.nsw.index')

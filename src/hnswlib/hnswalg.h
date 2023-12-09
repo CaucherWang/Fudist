@@ -650,7 +650,7 @@ namespace hnswlib {
 
         template <bool has_deletions, bool collect_metrics=false>
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>>
-        searchBaseLayernStep(tableint ep_id, const void *data_point, size_t nstep, size_t k) const {
+        searchBaseLayernStep(tableint ep_id, const void *data_point, size_t nstep, size_t k, Metric* metric = nullptr) const {
             VisitedList *vl = visited_list_pool_->getFreeVisitedList();
             vl_type *visited_array = vl->mass;
             vl_type visited_array_tag = vl->curV;
@@ -677,6 +677,7 @@ namespace hnswlib {
 #endif          
                 adsampling::tot_dist_calculation++;
                 adsampling::tot_full_dist ++;
+                metric->ndc++;
                 lowerBound = dist;
                 top_candidates.emplace(dist, ep_id);
                 candidate_set.emplace(-dist, ep_id);
@@ -737,6 +738,7 @@ namespace hnswlib {
                         adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif                  
                         adsampling::tot_full_dist++;
+                        metric->ndc++;
                         if (top_candidates.size() < k || lowerBound > dist) {                      
                             candidate_set.emplace(-dist, candidate_id);
                             if (!has_deletions || !isMarkedDeleted(candidate_id))
@@ -5127,8 +5129,8 @@ adsampling::tot_dimension+= seanet::D;
 
                 //plain
         std::priority_queue<std::pair<dist_t, labeltype >>
-        searchKnnPlain(void *query_data, size_t k, int adaptive=0, Metric* metric = nullptr) const {
-            
+        searchKnnPlain(void *query_data, size_t k, int adaptive=0, Metric* metric = nullptr, size_t ef = -1) const {
+            size_t use_ef = ef >=0 ? ef : ef_;
             std::priority_queue<std::pair<dist_t, labeltype >> result;
             if (cur_element_count == 0) return result;
 
@@ -5178,8 +5180,8 @@ adsampling::tot_dimension+= seanet::D;
                 else if(adaptive == 10) top_candidates=searchBaseLayerFINGER<false,true>(currObj, query_data, std::max(ef_, k));
                 else if(adaptive == 11) top_candidates=searchBaseLayerSEANET<false,true>(currObj, query_data, std::max(ef_, k));
                 else {
-                    if(ef_ > k) top_candidates=searchBaseLayerST<false,true>(currObj, query_data, std::max(ef_, k), metric);
-                    else top_candidates=searchBaseLayernStep<false,true>(currObj, query_data, ef_, k);
+                    if(use_ef >= k) top_candidates=searchBaseLayerST<false,true>(currObj, query_data, std::max(use_ef, k), metric);
+                    else top_candidates=searchBaseLayernStep<false,true>(currObj, query_data, use_ef, k, metric);
 
                 }
                 
