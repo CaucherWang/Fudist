@@ -568,7 +568,7 @@ static void test_lb_recall(data_t *massQ, size_t vecsize, size_t qsize, Hierarch
 template<typename data_t, typename dist_t>
 static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<dist_t> &appr_alg, size_t vecdim,
                vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive) {
-    double target_recall = 0.98;
+    double target_recall = 0.86;
     int lowk = ceil(k * target_recall);
     vector<int>ret(qsize, 0);
 
@@ -711,9 +711,9 @@ int main(int argc, char * argv[]) {
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
     int method = 0;
-    string data_str = "sift";   // dataset name
+    string data_str = "gauss100";   // dataset name
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
-    string M_str ="16"; // 8 for msong,mnist,cifar  48 for nuswide
+    string M_str ="50"; // 8 for msong,mnist,cifar  48 for nuswide
     string ef_str = "500"; 
 
     while(iarg != -1){
@@ -747,11 +747,11 @@ int main(int argc, char * argv[]) {
     string base_path_str = "../data";
     string result_base_path_str = "../results";
     
-    string exp_name = "perform_variance0.98";
+    string exp_name = "perform_variance0.86";
     string index_postfix = "_plain";
     string query_postfix = "";
     // string index_postfix = "";
-    string shuf_postfix = "_shuf5";
+    string shuf_postfix = "_shuf9";
     switch(method){
         case 0:
             break;
@@ -1158,6 +1158,7 @@ int main(int argc, char * argv[]) {
         cerr << "L2 space" << endl;
         cerr << "Read index from " << index_path << endl;
         auto appr_alg = new HierarchicalNSW<float>(&space, index_path, false);
+        appr_alg->num_deleted_ = 0;
         cerr << "max level: " << appr_alg->maxlevel_ << endl;
         
         vector<std::priority_queue<std::pair<float, labeltype >>> answers;

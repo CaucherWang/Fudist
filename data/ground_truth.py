@@ -6,7 +6,7 @@ import os
 import numpy as np
 from utils import *
 source = './data/'
-datasets = ['deep']
+datasets = ['gauss100']
 
 if __name__ == '__main__':
     for dataset in datasets:
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         print(Q.shape)
         # Q = L2_norm_dataset(Q)
         
-        K = 50000
+        K = 200000
         
         GT_I, GT_D = compute_GT_CPU(X, Q, K)
         print(GT_I.shape)

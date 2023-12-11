@@ -1,25 +1,11 @@
 import numpy as np
 import faiss
 import math
-from tqdm import tqdm
 import time
 import pickle
 from datetime import datetime
-import networkx as nx
 from collections import deque
-from scipy.sparse import csr_matrix
 from multiprocessing.dummy import Pool as ThreadPool
-from numba import njit, prange
-import hnswlib
-import matplotlib.pyplot as plt
-from pprint import pprint
-from requests import delete
-from scipy.spatial import distance as p_dist_func
-
-plt.rcParams['mathtext.fontset'] = "stix"
-plt.rcParams['font.family'] = 'calibri'
-# plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica']
-plt.rcParams['font.size'] = 22
 
 mark_size_offset = 3
 width = 3
@@ -182,7 +168,7 @@ def get_skewness(arr):
     return np.sum((arr - mean) ** 3) / (len(arr) * std ** 3)
 
 # indegree in exact knn-graph
-@njit
+
 def get_reversed_knn_number(gt_I, k):
     # input is exact knn in the base set, including the point itself
     # in dataset allowing duplication, this function is not accurate with small k (e.g., k = 1,2,3)
@@ -197,7 +183,7 @@ def get_reversed_knn_number(gt_I, k):
                 indegree_gt[gt_I[i][j]] += 1
     return indegree_gt
 
-# @njit
+# 
 def get_indegree_list(graph: list):
     indegree_gt = np.zeros(len(graph))
     for i in range(len(graph)):
@@ -207,7 +193,7 @@ def get_indegree_list(graph: list):
             indegree_gt[graph[i][j]] += 1
     return indegree_gt
 
-@njit
+
 def get_indegree(graph: np.ndarray):
     N = graph.shape[0]
     d = graph.shape[1]
@@ -221,7 +207,7 @@ def get_indegree(graph: np.ndarray):
             indegree_gt[graph[i][j]] += 1
     return indegree_gt
 
-@njit
+
 def count_edges(graph: np.ndarray):
     N = graph.shape[0]
     d = graph.shape[1]
@@ -245,7 +231,7 @@ def count_edges_list(graph: list):
     return cnt
 
 
-@njit
+
 def get_graph_quality(graph: np.ndarray, Kgraph, Kgt):
     N = graph.shape[0]
     d = graph.shape[1]
@@ -264,7 +250,7 @@ def get_graph_quality(graph: np.ndarray, Kgraph, Kgt):
         cnt += recall_list.shape[0]
     return cnt, cnt / total_cnt
 
-# @njit
+# 
 def get_graph_quality_list(graph: list, Kgraph, Kgt):
     cnt = 0
     N = len(graph)
@@ -276,7 +262,7 @@ def get_graph_quality_list(graph: list, Kgraph, Kgt):
         cnt += recall_list.shape[0]
     return cnt, cnt / (N * Kgt)
 
-@njit
+
 def get_graph_quality_detail(graph: np.ndarray, Kgraph, Kgt):
     N = graph.shape[0]
     d = graph.shape[1]
@@ -289,7 +275,7 @@ def get_graph_quality_detail(graph: np.ndarray, Kgraph, Kgt):
         ret[i] = recall_list.shape[0]
     return ret
 
-@njit
+
 def compute_pairwiese_distance(X, neighbors):
     # every row in X, compute the distance to its neighbors
     distances = []
@@ -301,7 +287,7 @@ def compute_pairwiese_distance(X, neighbors):
                 distances.append(np.sum((X[i] - X[neighbors[i][j]]) ** 2))
     return distances
 
-@njit
+
 def compute_pairwiese_distance_simple(X, target):
     # every row in X, compute the distance to its neighbors
     distances = []
@@ -311,7 +297,7 @@ def compute_pairwiese_distance_simple(X, target):
         distances.append(np.sum((X[i] - target) ** 2))
     return distances
 
-@njit
+
 def compute_pairwiese_distance_list(X, neighbors):
     # every row in X, compute the distance to its neighbors
     distances = []
@@ -393,7 +379,7 @@ def analyze_results_norm_length(tp_ids, fp_ids, fn_ids, lengths):
     
     return avg_tp_lengths, avg_fp_lengths, avg_fn_lengths
 
-# @njit
+# 
 def L2_norm_dataset(X):
     # L2 norm the n*d matrix dataset X
     norms = np.linalg.norm(X, axis=1)
@@ -412,7 +398,6 @@ def compute_angular_distance(vector1, vector2):
 def euclidean_distance(x,y):
     return np.sum(np.square(x-y))
 
-@njit(parallel=True)
 def pair_matrix_innerproduct(X, Y, data):
     ret = np.zeros((X.shape[0], Y.shape[1]))
     for i in prange(X.shape[0]):
