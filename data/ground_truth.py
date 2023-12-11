@@ -37,7 +37,11 @@ if __name__ == '__main__':
         print(Q.shape)
         # Q = L2_norm_dataset(Q)
         
+<<<<<<< HEAD
         K = 200000
+=======
+        K = 100000
+>>>>>>> 5d71ea3e330774046d3d6ef436f99c46eae54961
         
         GT_I, GT_D = compute_GT_CPU(X, Q, K)
         print(GT_I.shape)

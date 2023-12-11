@@ -55,6 +55,18 @@ def read_ivecs(filename, c_contiguous=True):
     print(fv.shape)
     return fv
 
+def read_ivecs_dim(filename, d=0):
+    print(f"Reading File - {filename}", end=":")
+    fv = np.fromfile(filename, dtype=np.int32)
+    if fv.size == 0:
+        return np.zeros((0, 0))
+    dim = fv.view(np.int32)[0]
+    assert dim >= d
+    fv = fv.reshape(-1, 1 + dim)
+    fv = fv[:, 1:1+d]
+    print(fv.shape)
+    return fv
+
 def write_fvecs(filename, data):
     print(f"Writing File - {filename}:{data.shape}")
     dim = (np.int32)(data.shape[1])
@@ -240,7 +252,7 @@ def get_graph_quality(graph: np.ndarray, Kgraph, Kgt):
     for i in range(N):
         if i % 100000 == 0:
             print(i)
-        exact_neighbors = Kgraph[i][:Kgt + 1]
+        exact_neighbors = Kgraph[i][:Kgt]
         recall_list = np.intersect1d(exact_neighbors, graph[i])
         # find the first element in graph[i] that is less than zero
         for j in graph[i]:
@@ -253,14 +265,16 @@ def get_graph_quality(graph: np.ndarray, Kgraph, Kgt):
 # 
 def get_graph_quality_list(graph: list, Kgraph, Kgt):
     cnt = 0
+    total_cnt = 0
     N = len(graph)
     for i in range(N):
         if i % 100000 == 0:
             print(i)
-        exact_neighbors = Kgraph[i][:Kgt + 1]
+        exact_neighbors = Kgraph[i][:Kgt]
         recall_list = np.intersect1d(exact_neighbors, graph[i])
+        total_cnt += len(graph[i])
         cnt += recall_list.shape[0]
-    return cnt, cnt / (N * Kgt)
+    return cnt, cnt / total_cnt
 
 
 def get_graph_quality_detail(graph: np.ndarray, Kgraph, Kgt):

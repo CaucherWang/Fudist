@@ -584,7 +584,7 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
                 cerr << index << " / " << qsize << endl;
         }
 
-        int lowef = k, highef, curef, tmp, bound = 20000;
+        int lowef = k, highef, curef, tmp, bound = 30000;
         long success = -1;
         Metric metric;
 
