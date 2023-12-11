@@ -26,7 +26,7 @@ def update_kgraph(kgraph, old2new):
 
 source = './data/'
 datasets = ['rand100']
-shuf_num = 3
+shuf_num = 4
 if __name__ == '__main__':
     for dataset in datasets:
         dir = os.path.join(source, dataset)
@@ -41,10 +41,12 @@ if __name__ == '__main__':
         shuf_data_file = os.path.join(dir, f'{dataset}_base.fvecs_shuf{shuf_num}')
         pos_file = os.path.join(dir, f'{dataset}_shuf{shuf_num}.ibin')
         kgraph_path = os.path.join(dir, f'{dataset}_self_groundtruth.ivecs_clean')
+        new_kgraph_path = os.path.join(dir, f'{dataset}_self_groundtruth.ivecs_clean_shuf{shuf_num}')
         X = read_fvecs(data_file)
-        Q = read_fvecs(query_file)
+        # Q = read_fvecs(query_file)
         # gt_shuf = read_ivecs(shuf_gt_file)
-        gt = read_ivecs(gt_file)
+        # gt = read_ivecs(gt_file)
+        G = read_ivecs_dim(kgraph_path, 500)[:, :500]
         # gt_hard = read_ivecs(gt_hard_file)
         # gt_easy = read_ivecs(gt_easy_file)
         nx = X.shape[0]
@@ -57,6 +59,6 @@ if __name__ == '__main__':
         for i in range(rows):
             old2new[original_positions[i]] = i
             
-        new_graph = update_kgraph(gt, old2new)
-
+        new_graph = update_kgraph(G, old2new)
+        write_ivecs(new_kgraph_path, new_graph)
         

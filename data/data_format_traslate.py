@@ -7,7 +7,7 @@ from utils import *
 
 source = './data/'
 # datasets = ['deep', 'gist', 'glove1.2m', 'msong', 'sift', 'tiny5m', 'ukbench', 'word2vec']
-datasets = ['deep']
+datasets = ['rand100']
 
                 
 if __name__ == "__main__":
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     for dataset in datasets:
         # path
         path = os.path.join(source, dataset)
-        data_path = os.path.join(path, f'{dataset}_base.fvecs_shuf4')
+        data_path = os.path.join(path, f'{dataset}_base.fvecs')
         data_path_bin = os.path.join(path, f'{dataset}_base.fbin')
         learn_path = os.path.join(path, f'{dataset}_learn.fbin')
         sample_query_path_bin = os.path.join(path, f'{dataset}_sample_query.fbin')
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         query_path = os.path.join(path, f'{dataset}_query.fvecs')
         query_path_bin = os.path.join(path, f'{dataset}_query.fbin')
         gt_path_bin = os.path.join(path, f'{dataset}_groundtruth.ibin')
-        gt_path = os.path.join(path, f'{dataset}_groundtruth.ivecs_shuf4')
+        gt_path = os.path.join(path, f'{dataset}_groundtruth.ivecs')
         gt_dist_path = os.path.join(path, f'{dataset}_groundtruth_dist.fvecs')
         gt_dist_path_bin = os.path.join(path, f'{dataset}_groundtruth_dist.fbin')
         visual_path = os.path.join(path, f'{dataset}_visual.fbin')

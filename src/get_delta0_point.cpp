@@ -190,6 +190,32 @@ void get_reachable_in_subgraph(vector<vector<int>>& G, int q, unordered_set<int>
     }
 }
 
+void get_reachable_in_V_limited(vector<vector<int>>& G, int limit_index, 
+                        int q, unordered_set<int>& V, unordered_set<int>& visited_V){
+    // we only care whether points in V can be reached from q
+    unordered_set<int>visited;
+    visited_V.insert(q);
+    queue<int> queue;
+    queue.push(q);
+    while(!queue.empty() && visited_V.size() < V.size()){
+        auto vertex = queue.front();
+        queue.pop();
+
+        int index = 0;
+        for(auto v: G[vertex]){
+            if(++index > limit_index)   break;
+            if(v < 0) continue;
+            if(V.count(v) > 0){
+                visited_V.insert(v);
+            }
+            if(visited.count(v) == 0){
+                queue.push(v);
+                visited.insert(v);
+            }
+        }
+    }
+}
+
 void get_reachable_in_V(vector<vector<int>>& G, int q, unordered_set<int>& V, unordered_set<int>& visited_V){
     // we only care whether points in V can be reached from q
     unordered_set<int>visited;
@@ -561,6 +587,25 @@ void get_subgraph(vector<vector<int>>& G, unsigned* gt_list, int delta0_point,
     }
 }
 
+void get_subgraph_place_holder(vector<vector<int>>& G, unsigned* gt_list, int delta0_point,
+                    vector<vector<int>>& subgraph, unordered_map<int,int>& id2index){
+    unordered_set<int> V;
+    for(int i = 0; i < delta0_point; ++i){
+        V.insert(gt_list[i]);
+    }
+    for(int i = 0; i < delta0_point; ++i){
+        subgraph.push_back(G[gt_list[i]]);
+
+        for(int j = 0; j < subgraph[i].size(); ++j){
+            if(V.count(subgraph[i][j]) > 0){
+                subgraph[i][j] = id2index[subgraph[i][j]];
+            }else{
+                subgraph[i][j] = -1;
+            }
+        }
+    }
+}
+
 // deprecated: silly dijkstra
 void dijkstra_shortest_paths(vector<vector<int>>& subG, int source, unordered_set<int>&dest,
                             unordered_set<int>&points_in_paths){
@@ -778,20 +823,75 @@ void get_me_from_delta0_point_recall_prob(vector<vector<int>>& G, int k, Matrix<
             }
         }
         auto gt_list = GT_list[i];
+        assert(delta0_point[i] <= GT_list.d);
         auto me = get_me_from_delta0_point_recall_prob_atom(G, k, gt_list, delta0_point[i], recall, prob);
         res[i] = me;
     }
 }
 
 
+int get_K0_from_fixed_delta_point_recall_prob_atom(vector<vector<int>>& KGraph, int k, int cand, unsigned* gt_list,
+                                                    int recall, int prob){
+    unordered_map<int,int> id2index;
+    for(int i =0 ; i < cand; ++i){
+        id2index[gt_list[i]] = i;
+    }
+
+    vector<vector<int>>subgraph;
+    // obtain subgraph
+    get_subgraph_place_holder(KGraph, gt_list, cand, subgraph, id2index);
+
+    unordered_set<int> success, V;
+    for(int i = 0; i < k; ++i){
+        V.insert(i);
+    }
+
+    int K = 1;
+    for(; K < KGraph[0].size() && success.size() < prob; ++K){
+        for(int i = 0 ; i < k && success.size() < prob; ++i){
+            if(success.count(i) > 0)    continue;
+            unordered_set<int> reachable;
+            get_reachable_in_V_limited(subgraph, K, i, V ,reachable);
+            if(reachable.size() >= recall){
+                success.insert(i);
+            }
+        }
+    }
+
+    if(success.size() < prob){
+        cerr << "Can't find enough qulified starting points, success.size(): " << success.size() << endl; 
+    }
+    return K;                               
+}
+
+void get_K0_from_fixed_delta_point_recall_prob(vector<vector<int>>& KGraph, int k, float beta, Matrix<unsigned> GT_list,
+                                                    int recall, int prob, vector<int>&res){
+    
+    int cur = 0;
+    int cand = floor((1 + beta) * k);
+#pragma omp parallel for
+    for(int i = 0; i < GT_list.n; ++i){
+        #pragma omp critical
+        {
+            if(++cur % 100 == 0){
+                std::cerr << "cur: " << cur << endl;
+            }
+        }
+        auto gt_list = GT_list[i];
+        auto me = get_K0_from_fixed_delta_point_recall_prob_atom(KGraph, k, cand, gt_list, recall, prob);
+        res[i] = me;
+    }
+
+}
+
 int main(int argc, char * argv[]) {
 
     int method = 0; // 0: kgraph 1: hnsw 2: nsg
-    int purpose = 1; // 0: get delta0^p@Acc 1: get me_exhausted 2: get me^p_delta_0@Acc
-    string data_str = "gauss100";   // dataset name
+    int purpose = 0; // 0: get delta0^p@Acc 1: get me_exhausted 2: get me^p_delta_0@Acc 3: get K_0^p@Acc (only KGraph)
+    string data_str = "deep";   // dataset name
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
     int subk=50;
-    float recall = 0.94;
+    float recall = 0.98;
     float prob = 0.96;
     int recall_target = ceil(recall * subk);
     int prob_target = ceil(prob * subk);
@@ -834,11 +934,11 @@ int main(int argc, char * argv[]) {
     if(method == 0){
         // kgraph
         index_postfix = "_clean";
-        string kgraph_od = "";
-        int Kbuild =100; 
+        string kgraph_od = "_500";
+        int Kbuild =50; 
         index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_self_groundtruth" + kgraph_od + ".ivecs" + index_postfix + shuf_postfix;
         string delta0_path_str = result_prefix_str + "_delta0_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4) 
-        + "_K" + to_string(Kbuild)  + ".ibin" + index_postfix + shuf_postfix + query_postfix;
+        + "_K" + to_string(Kbuild)  + ".ibin" + index_postfix + query_postfix;
         cerr << "index path: " << index_path_str << endl; 
         KGraph *kgraph = new KGraph(index_path_str.c_str(), nullptr, &space, dim, 0, Kbuild);
         auto index = kgraph->get_graph();
@@ -858,10 +958,16 @@ int main(int argc, char * argv[]) {
             get_me_exhausted_from_delta0_point_recall_prob(*index, subk, GT, *delta0_point, recall_target, prob_target, res);
         }else if (purpose == 2){
             result_path_str = result_prefix_str + "_me_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
-            + "_K" + to_string(Kbuild) + ".ibin" + index_postfix + shuf_postfix + query_postfix;
+            + "_K" + to_string(Kbuild) + ".ibin" + index_postfix + query_postfix;
             cerr << "result path: "<< result_path_str << endl;
             auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
             get_me_from_delta0_point_recall_prob(*index, subk, GT, *delta0_point, recall_target, prob_target, res);
+        }else if(purpose == 3){
+            double beta = 0.30;
+            result_path_str = result_prefix_str + "_K0_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
+            + "_beta"+ to_string(beta).substr(0, 4) + ".ibin" + index_postfix + query_postfix;
+            cerr << "result path: "<< result_path_str << endl;
+            get_K0_from_fixed_delta_point_recall_prob(*index, subk, beta, GT, recall_target, prob_target, res);
         }
     }else if(method == 1){
         // hnsw

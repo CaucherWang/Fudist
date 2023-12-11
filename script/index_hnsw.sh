@@ -2,8 +2,8 @@
 cd ..
 
 efConstruction=500
-M=16
-data='sift'
+M=50
+data='rand100'
 
 # g++ -o ./src/index_hnsw ./src/index_hnsw.cpp -I ./src/ -O3 -mavx2 -fopenmp
 
@@ -12,7 +12,7 @@ echo "Indexing - ${data}"
 
 data_path=./data/${data}
 index_path=./data/${data}
-postfix="_shuf11"
+postfix="_shuf19"
 
 data_file="${data_path}/${data}_base.fvecs${postfix}"
 index_file="${index_path}/${data}_ef${efConstruction}_M${M}.index_plain${postfix}"

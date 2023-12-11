@@ -55,14 +55,14 @@ def search(graph, vec, query, k, efsearch, visited_points=None, glanced_points=N
         if not resultSet.empty() and -top.dist > resultSet.queue[0].dist:
             break
         nhops +=1
-        if visited_points is not None:
-            visited_points[top.id] += 1
+        # if visited_points is not None:
+        #     visited_points[top.id] += 1
         for nei in graph[top.id]:
             if nei in visited:
                 continue
             visited.add(nei)
-            if glanced_points is not None:
-                glanced_points[nei] += 1
+            # if glanced_points is not None:
+            #     glanced_points[nei] += 1
             ndc += 1
             dist = euclidean_distance(vec[nei], query)
             if not resultSet.full() or dist < resultSet.queue[0].dist:
@@ -86,6 +86,7 @@ def get_recall(topk, groundtruth):
     ids = [topk[i][0] for i in range(len(topk))]
     ids = set(ids)
     assert len(ids) == len(topk)
+    gts = set(groundtruth[: len(topk)])
     for id in ids:
         if id in groundtruth:
             cnt += 1
@@ -175,9 +176,9 @@ def do_expr(X, Q, GT, k, eps, n_rknn, lengths, indegree):
  
 
 source = './data/'
-dataset = 'word2vec'
-R = 32
-L = 40
+dataset = 'rand100'
+R = 100
+L = 200
 C = 500
 Kbuild = 16
 if __name__ == "__main__":
@@ -195,20 +196,20 @@ if __name__ == "__main__":
     Q = read_fvecs(query_path)[:1000]
     # Q = read_fvecs(query_path)
     GT = read_ivecs(GT_path)
-    K_Graph = read_ivecs(Kgraph_path)
+    # K_Graph = read_ivecs(Kgraph_path)
     # lengths = compute_lengths(X)
     # write_fbin_simple(os.path.join(source, dataset, f'{dataset}_norm_to_mean.fbin'), lengths)
-    lengths = read_fbin_simple(os.path.join(source, dataset, f'{dataset}_norm_to_mean.fbin'))
-    # n_rknn = get_reversed_knn_number(G, KG)
-    # write_ibin_simple(ind_path, n_rknn)
-    n_rknn = read_ibin_simple(ind_path)
-    # stat_out_degree(G)
-    # print(get_graph_quality_list(G, K_Graph, KG))
+    # lengths = read_fbin_simple(os.path.join(source, dataset, f'{dataset}_norm_to_mean.fbin'))
+    # # n_rknn = get_reversed_knn_number(G, KG)
+    # # write_ibin_simple(ind_path, n_rknn)
+    # n_rknn = read_ibin_simple(ind_path)
+    # # stat_out_degree(G)
+    # # print(get_graph_quality_list(G, K_Graph, KG))
     
-    # indegree = get_indegree_list(G)
-    # write_ibin_simple(nsg_ind_path, indegree)
-    indegree = read_ibin_simple(nsg_ind_path)
-    get_indegree_hist(indegree, dataset, 'nsg')
+    # # indegree = get_indegree_list(G)
+    # # write_ibin_simple(nsg_ind_path, indegree)
+    # indegree = read_ibin_simple(nsg_ind_path)
+    # get_indegree_hist(indegree, dataset, 'nsg')
     # # find the elements with the largest indegree
     # get_outlink_density(indegree, G, X.shape[0])    
 
@@ -248,70 +249,70 @@ if __name__ == "__main__":
     # visited_points = np.zeros(X.shape[0], dtype=np.int32)
     # glanced_points = np.zeros(X.shape[0], dtype=np.int32)
     
-    # efss = [1550,1500]
+    efss = [20025]
     # efss = [1500,2000,2500,3000]
-    # for efs in efss:
-    #     print(f'efsearch: {efs}', end='\t')
-    #     sum_recall = 0
-    #     sum_ndc = 0
-    #     sum_nhops = 0
-    #     idx = 0
-    #     sum_fp_rknn = 0
-    #     sum_tp_rknn = 0
-    #     sum_fn_rknn = 0
-    #     sum_tp_indegree = 0
-    #     sum_fp_indegree = 0
-    #     sum_fn_indegree = 0
-    #     sum_tp_lengths = 0
-    #     sum_fp_lengths = 0
-    #     sum_fn_lengths = 0
-    #     sum_tps = 0
-    #     sum_fps = 0
-    #     sum_fns = 0
-    #     recall = 0
-    #     # print()
-    #     for q in Q:
-    #         topk, ndc, nhops = search(G, X, q, k, efs, [ep])
-    #         gt = GT[idx][:k]
-    #         recall = get_recall(topk, gt)
+    for efs in efss:
+        print(f'efsearch: {efs}', end='\t')
+        sum_recall = 0
+        sum_ndc = 0
+        sum_nhops = 0
+        idx = 0
+        sum_fp_rknn = 0
+        sum_tp_rknn = 0
+        sum_fn_rknn = 0
+        sum_tp_indegree = 0
+        sum_fp_indegree = 0
+        sum_fn_indegree = 0
+        sum_tp_lengths = 0
+        sum_fp_lengths = 0
+        sum_fn_lengths = 0
+        sum_tps = 0
+        sum_fps = 0
+        sum_fns = 0
+        recall = 0
+        # print()
+        for q in Q:
+            topk, ndc, nhops = search(G, X, q, k, efs, eps=[ep])
+            gt = GT[idx][:k]
+            recall = get_recall(topk, gt)
             
-    #         tps, fps, fns = decompose_topk_to_3sets(np.array(topk), np.array(gt))
-    #         sum_tps += len(tps)
-    #         sum_fps += len(fps)
-    #         sum_fns += len(fns)
+            # tps, fps, fns = decompose_topk_to_3sets(np.array(topk), np.array(gt))
+            # sum_tps += len(tps)
+            # sum_fps += len(fps)
+            # sum_fns += len(fns)
             
-    #         tp_n_rknn, fp_n_rknn, fn_n_rknn = analyze_results_k_occurrence(tps, fps, fns, n_rknn)
-    #         sum_fp_rknn += fp_n_rknn
-    #         sum_tp_rknn += tp_n_rknn
-    #         sum_fn_rknn += fn_n_rknn
+            # tp_n_rknn, fp_n_rknn, fn_n_rknn = analyze_results_k_occurrence(tps, fps, fns, n_rknn)
+            # sum_fp_rknn += fp_n_rknn
+            # sum_tp_rknn += tp_n_rknn
+            # sum_fn_rknn += fn_n_rknn
             
-    #         tp_indegree, fp_indegree, fn_indegree = analyze_results_indegree(tps, fps, fns, indegree)
-    #         sum_tp_indegree += tp_indegree
-    #         sum_fp_indegree += fp_indegree
-    #         sum_fn_indegree += fn_indegree
+            # tp_indegree, fp_indegree, fn_indegree = analyze_results_indegree(tps, fps, fns, indegree)
+            # sum_tp_indegree += tp_indegree
+            # sum_fp_indegree += fp_indegree
+            # sum_fn_indegree += fn_indegree
             
-    #         tp_lengths, fp_lengths, fn_lengths = analyze_results_norm_length(tps, fps, fns, lengths)
-    #         sum_tp_lengths += tp_lengths
-    #         sum_fp_lengths += fp_lengths
-    #         sum_fn_lengths += fn_lengths
+            # tp_lengths, fp_lengths, fn_lengths = analyze_results_norm_length(tps, fps, fns, lengths)
+            # sum_tp_lengths += tp_lengths
+            # sum_fp_lengths += fp_lengths
+            # sum_fn_lengths += fn_lengths
             
-    #         idx += 1
-    #         if(idx % 1000 == 0):
-    #             print(idx)
-    #         sum_ndc += ndc
-    #         sum_nhops += nhops
-    #         sum_recall += recall
-    #     # print()
-    #     recall = sum_recall / Q.shape[0] / k
-    #     ndc = sum_ndc / Q.shape[0]
-    #     nhops = sum_nhops / Q.shape[0]
-    #     print(f'recall: {recall}, ndc: {ndc}, nhops: {nhops}')
-    #     print(f'\ttp_rknn: {sum_tp_rknn / sum_tps}, fp_rknn: {sum_fp_rknn / sum_fps}, fn_rknn: {sum_fn_rknn / sum_fns}, tp-fn: {sum_tp_rknn / sum_tps - sum_fn_rknn / sum_fns}')
-    #     print(f'{sum_tp_rknn / sum_tps:.2f} & {sum_fp_rknn / sum_fps:.2f} & {sum_fn_rknn / sum_fns:.2f} & {sum_tp_rknn / sum_tps - sum_fn_rknn / sum_fns:.2f}')
-    #     print(f'\ttp_indegree: {sum_tp_indegree / sum_tps}, fp_indegree: {sum_fp_indegree / sum_fps}, fn_indegree: {sum_fn_indegree / sum_fns}, tp-fn: {sum_tp_indegree / sum_tps - sum_fn_indegree / sum_fns}')
-    #     print(f'{sum_tp_indegree / sum_tps:.2f} & {sum_fp_indegree / sum_fps:.2f} & {sum_fn_indegree / sum_fns:.2f} & {sum_tp_indegree / sum_tps - sum_fn_indegree / sum_fns:.2f}')
-    #     print(f'\ttp_lengths: {sum_tp_lengths / sum_tps}, fp_lengths: {sum_fp_lengths / sum_fps}, fn_lengths: {sum_fn_lengths / sum_fns}, tp-fn: {sum_tp_lengths / sum_tps - sum_fn_lengths / sum_fns}')
-    #     print(f'{sum_tp_lengths / sum_tps:.2f} & {sum_fp_lengths / sum_fps:.2f} & {sum_fn_lengths / sum_fns:.2f} & {sum_tp_lengths / sum_tps - sum_fn_lengths / sum_fns:.2f}')
+            # idx += 1
+            # if(idx % 1000 == 0):
+            #     print(idx)
+            # sum_ndc += ndc
+            # sum_nhops += nhops
+            # sum_recall += recall
+        # print()
+        recall = sum_recall / Q.shape[0] / k
+        ndc = sum_ndc / Q.shape[0]
+        nhops = sum_nhops / Q.shape[0]
+        print(f'recall: {recall}, ndc: {ndc}, nhops: {nhops}')
+        print(f'\ttp_rknn: {sum_tp_rknn / sum_tps}, fp_rknn: {sum_fp_rknn / sum_fps}, fn_rknn: {sum_fn_rknn / sum_fns}, tp-fn: {sum_tp_rknn / sum_tps - sum_fn_rknn / sum_fns}')
+        print(f'{sum_tp_rknn / sum_tps:.2f} & {sum_fp_rknn / sum_fps:.2f} & {sum_fn_rknn / sum_fns:.2f} & {sum_tp_rknn / sum_tps - sum_fn_rknn / sum_fns:.2f}')
+        print(f'\ttp_indegree: {sum_tp_indegree / sum_tps}, fp_indegree: {sum_fp_indegree / sum_fps}, fn_indegree: {sum_fn_indegree / sum_fns}, tp-fn: {sum_tp_indegree / sum_tps - sum_fn_indegree / sum_fns}')
+        print(f'{sum_tp_indegree / sum_tps:.2f} & {sum_fp_indegree / sum_fps:.2f} & {sum_fn_indegree / sum_fns:.2f} & {sum_tp_indegree / sum_tps - sum_fn_indegree / sum_fns:.2f}')
+        print(f'\ttp_lengths: {sum_tp_lengths / sum_tps}, fp_lengths: {sum_fp_lengths / sum_fps}, fn_lengths: {sum_fn_lengths / sum_fns}, tp-fn: {sum_tp_lengths / sum_tps - sum_fn_lengths / sum_fns}')
+        print(f'{sum_tp_lengths / sum_tps:.2f} & {sum_fp_lengths / sum_fps:.2f} & {sum_fn_lengths / sum_fns:.2f} & {sum_tp_lengths / sum_tps - sum_fn_lengths / sum_fns:.2f}')
     
     # # print(np.corrcoef(visited_points, indegree))
     # visit_indegree = np.concatenate((visited_points.reshape(-1, 1), indegree.reshape(-1, 1)), axis=1)
