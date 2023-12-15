@@ -567,8 +567,7 @@ static void test_lb_recall(data_t *massQ, size_t vecsize, size_t qsize, Hierarch
 
 template<typename data_t, typename dist_t>
 static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, HierarchicalNSW<dist_t> &appr_alg, size_t vecdim,
-               vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive) {
-    double target_recall = 0.86;
+               vector<std::priority_queue<std::pair<dist_t, labeltype >>> &answers, size_t k, int adaptive, float target_recall) {
     int lowk = ceil(k * target_recall);
     vector<int>ret(qsize, 0);
 
@@ -584,7 +583,7 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
                 cerr << index << " / " << qsize << endl;
         }
 
-        int lowef = k, highef, curef, tmp, bound = 30000;
+        int lowef = k, highef, curef, tmp, bound = 100000;
         long success = -1;
         Metric metric;
 
@@ -711,16 +710,49 @@ int main(int argc, char * argv[]) {
     //                           1: ADS+       41:LSH+             71: OPQ+ 81:PCA+       TMA optimize (from ADSampling)
     //                                                       62:PQ! 72:OPQ!              QEO optimize (from tau-MNG)
     int method = 0;
+    char data_str_char[256];
     string data_str = "gauss100";   // dataset name
+    float recall;
+    char recall_char[5], M_char[5], ef_char[5], shuf_char[10];
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
-    string M_str ="50"; // 8 for msong,mnist,cifar  48 for nuswide
-    string ef_str = "500"; 
+    int M, ef;
+    string M_str, ef_str, recall_str, shuf_str; 
 
     while(iarg != -1){
-        iarg = getopt_long(argc, argv, "d:", longopts, &ind);
+        iarg = getopt_long(argc, argv, "e:d:r:m:s:", longopts, &ind);
         switch (iarg){
+            case 'e': 
+                if(optarg){
+                    ef = atoi(optarg);
+                    strcpy(ef_char, optarg);
+                    ef_str = ef_char;
+                }
+                break;
+            case 'm': 
+                if(optarg){
+                    M = atoi(optarg);
+                    strcpy(M_char, optarg);
+                    M_str = M_char;
+                }
+                break;
             case 'd':
-                if(optarg)method = atoi(optarg);
+                if(optarg){
+                    strcpy(data_str_char, optarg);
+                    data_str = data_str_char;
+                }
+                break;
+            case 'r':
+                if(optarg){
+                    strcpy(recall_char, optarg);
+                    recall = atof(optarg);
+                    recall_str = recall_char;
+                }
+                break;
+            case 's':
+                if(optarg){
+                    strcpy(shuf_char, optarg);
+                    shuf_str = shuf_char;
+                }
                 break;
         }
     }
@@ -747,11 +779,11 @@ int main(int argc, char * argv[]) {
     string base_path_str = "../data";
     string result_base_path_str = "../results";
     
-    string exp_name = "perform_variance0.86";
+    string exp_name = "perform_variance" + recall_str;
     string index_postfix = "_plain";
     string query_postfix = "";
     // string index_postfix = "";
-    string shuf_postfix = "_shuf9";
+    string shuf_postfix = shuf_str;
     switch(method){
         case 0:
             break;
@@ -1165,7 +1197,7 @@ int main(int argc, char * argv[]) {
         get_gt(G.data, Q.data, appr_alg->max_elements_, Q.n, space, Q.d, answers, k, subk, *appr_alg);
         // ProfilerStart("../prof/svd-profile.prof");
         // test_vs_recall(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method);
-        test_performance(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method);
+        test_performance(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method, recall);
         // test_lb_recall(Q.data, appr_alg->max_elements_, Q.n, *appr_alg, Q.d, answers, subk, method);
         // ProfilerStop();
 

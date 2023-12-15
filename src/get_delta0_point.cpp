@@ -887,7 +887,7 @@ void get_K0_from_fixed_delta_point_recall_prob(vector<vector<int>>& KGraph, int 
 int main(int argc, char * argv[]) {
 
     int method = 0; // 0: kgraph 1: hnsw 2: nsg
-    int purpose = 0; // 0: get delta0^p@Acc 1: get me_exhausted 2: get me^p_delta_0@Acc 3: get K_0^p@Acc (only KGraph)
+    int purpose = 2; // 0: get delta0^p@Acc 1: get me_exhausted 2: get me^p_delta_0@Acc 3: get K_0^p@Acc (only KGraph)
     string data_str = "deep";   // dataset name
     int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
     int subk=50;
