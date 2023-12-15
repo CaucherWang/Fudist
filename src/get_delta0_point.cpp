@@ -718,7 +718,15 @@ int get_me_exhausted_from_delta0_point_recall_prob_atom(vector<vector<int>>& G, 
     get_reachable_pairs_from_delta_point_recall_prob(subgraph, k, gt_list, delta0_point, recall, prob, id2index, reachable_pairs);
 
     if(reachable_pairs.size() == 0){
-        return delta0_point;
+        if(delta0_point >= 10000)   return -delta0_point;
+        unordered_set<int> V;
+        for(int i = 0; i < delta0_point; ++i){
+            V.insert(gt_list[i]);
+            for(auto& v: G[gt_list[i]]){
+                V.insert(v);
+            }
+        }
+        return -V.size();
     }
 
 
@@ -764,7 +772,37 @@ void get_me_exhausted_from_delta0_point_recall_prob(vector<vector<int>>& G, int 
             }
         }
         auto gt_list = GT_list[i];
+        if(delta0_point[i] == GT_list.d + 1){
+            delta0_point[i] = GT_list.d;
+        }
+        if(delta0_point[i] > GT_list.d){
+            cerr << "Query id = " << i << "\tdelta0_point: " << delta0_point[i] <<  "\tGT_list.d: " << GT_list.d << endl;
+            exit(-1);
+        }
         auto me_exhausted = get_me_exhausted_from_delta0_point_recall_prob_atom(G, k, gt_list, delta0_point[i], recall, prob);
+        if(me_exhausted < 0){
+            me_exhausted = -me_exhausted;
+            cerr << "Query id = " << i << endl;
+        }
+        res[i] = me_exhausted;
+    }
+}
+
+
+void get_me_exhausted_from_fixed_delta_point_recall_prob(vector<vector<int>>& G, int k, Matrix<unsigned> GT_list, int delta_point,
+                                                    int recall, int prob, vector<int>&res){
+    
+    int cur = 0;
+#pragma omp parallel for
+    for(int i = 0; i < GT_list.n; ++i){
+        #pragma omp critical
+        {
+            if(++cur % 100 == 0){
+                std::cerr << "cur: " << cur << endl;
+            }
+        }
+        auto gt_list = GT_list[i];
+        auto me_exhausted = get_me_exhausted_from_delta0_point_recall_prob_atom(G, k, gt_list, k + delta_point, recall, prob);
         res[i] = me_exhausted;
     }
 }
@@ -823,7 +861,13 @@ void get_me_from_delta0_point_recall_prob(vector<vector<int>>& G, int k, Matrix<
             }
         }
         auto gt_list = GT_list[i];
-        assert(delta0_point[i] <= GT_list.d);
+        if(delta0_point[i] == GT_list.d + 1){
+            delta0_point[i] = GT_list.d;
+        }
+        if(delta0_point[i] > GT_list.d){
+            cerr << "Query id = " << i << "\tdelta0_point: " << delta0_point[i] <<  "\tGT_list.d: " << GT_list.d << endl;
+            exit(-1);
+        }
         auto me = get_me_from_delta0_point_recall_prob_atom(G, k, gt_list, delta0_point[i], recall, prob);
         res[i] = me;
     }
@@ -909,7 +953,7 @@ int main(int argc, char * argv[]) {
     if(data_str.find("rand") != string::npos || data_str.find("gauss") != string::npos)
         GT_num_str = "_50000";
     else if(data_str.find("deep") != string::npos || data_str.find("sift") != string::npos)
-        GT_num_str = "_50000";
+        GT_num_str = "_100000";
     else if( data_str.find("word2vec") != string::npos || data_str.find("glove") != string::npos)
         GT_num_str = "_50000";
     string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth" + GT_num_str + ".ivecs" + shuf_postfix + query_postfix;
@@ -935,7 +979,7 @@ int main(int argc, char * argv[]) {
         // kgraph
         index_postfix = "_clean";
         string kgraph_od = "_500";
-        int Kbuild =50; 
+        int Kbuild =475; 
         index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_self_groundtruth" + kgraph_od + ".ivecs" + index_postfix + shuf_postfix;
         string delta0_path_str = result_prefix_str + "_delta0_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4) 
         + "_K" + to_string(Kbuild)  + ".ibin" + index_postfix + query_postfix;
@@ -968,6 +1012,12 @@ int main(int argc, char * argv[]) {
             + "_beta"+ to_string(beta).substr(0, 4) + ".ibin" + index_postfix + query_postfix;
             cerr << "result path: "<< result_path_str << endl;
             get_K0_from_fixed_delta_point_recall_prob(*index, subk, beta, GT, recall_target, prob_target, res);
+        }else if(purpose == 4){
+            int delta_point = 500;
+            result_path_str = result_prefix_str + "_me_exhausted_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
+            + "_delta_point"+ to_string(delta_point) + "_K" + to_string(Kbuild) + ".ibin" + index_postfix + query_postfix;
+            cerr << "result path: "<< result_path_str << endl;
+            get_me_exhausted_from_fixed_delta_point_recall_prob(*index, subk, GT, delta_point, recall_target, prob_target, res);
         }
     }else if(method == 1){
         // hnsw

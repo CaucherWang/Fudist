@@ -108,6 +108,10 @@ int main(int argc, char * argv[]) {
             }
 
             appr_alg->saveIndex(index_path);
+            vector<int> out_degree(N, 0);
+            vector<int> in_degree(N, 0);
+            appr_alg->getDegrees(out_degree, in_degree);
+            // 
 
     }else if(data_type == 1){
             Matrix<uint8_t> *X = new Matrix<uint8_t>(data_path, read_N);

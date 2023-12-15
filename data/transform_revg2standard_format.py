@@ -5,11 +5,11 @@ import struct
           
 source = './data/'
 result_source = './results/'
-dataset = 'sift'
+dataset = 'deep'
 idx_postfix = '_plain'
 shuf_postfix = ''
 efConstruction = 500
-Kbuild = 15
+Kbuild = 275
 M=16
 R = 32
 L = 40

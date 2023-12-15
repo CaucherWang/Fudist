@@ -336,6 +336,15 @@ def compute_lengths(X):
     lengths = np.linalg.norm(X_norm, axis=1)
     return lengths  
 
+def transform_kgraph2std(new_path, revG):
+    with open(new_path, 'wb') as f:
+        for i in range(len(revG)):
+            if i % 100000 == 0:
+                print(f'{i}/{len(revG)}')
+            # write binary to file
+            for j in range(len(revG[i])):
+                f.write(struct.pack('<i', revG[i][j]))
+            f.write(struct.pack('<i', -1))
 
 def get_query_length(X, Q):
     mean = np.mean(X, axis=0)
