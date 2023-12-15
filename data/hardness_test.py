@@ -181,7 +181,8 @@ if __name__ == "__main__":
     # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
     #                                                '_K100.ibin_clean'))
     
-    KLIST = [75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375 ,400, 425, 450, 475, 499]
+    # KLIST = [75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375 ,400, 425, 450, 475, 499]
+    KLIST = [75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375 ,400]
     # KLIST = [175, 200, 250, 300, 400, 499]
     me_exhausted_path = os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
                                      '_K%d.ibin_clean')
@@ -194,14 +195,27 @@ if __name__ == "__main__":
     me_exhausted = np.array(me_exhausted).T
     # query_hardness = np.average(me_exhausted, axis=0)
     from scipy import interpolate
+    # areas = []
+    # for sample in me_exhausted:
+    #     f = interpolate.interp1d(KLIST, sample)
+    #     xnew = np.linspace(min(KLIST), max(KLIST), num=1000, endpoint=True)
+    #     ynew = f(xnew)
+    #     area = np.trapz(ynew, xnew)
+    #     areas.append(area)
+    
+    # query_hardness = np.array(areas)
+
     areas = []
     for sample in me_exhausted:
-        f = interpolate.interp1d(KLIST, sample)
-        xnew = np.linspace(min(KLIST), max(KLIST), num=1000, endpoint=True)
-        ynew = f(xnew)
-        area = np.trapz(ynew, xnew)
+        # Fit a polynomial of degree 2 to the data
+        coefficients = np.polyfit(KLIST, sample, 2)
+        polynomial = np.poly1d(coefficients)
+
+        # Integrate the polynomial and evaluate it at the endpoints of the interval
+        integral = polynomial.integ()
+        area = integral(max(KLIST)) - integral(min(KLIST))
         areas.append(area)
-    
+
     query_hardness = np.array(areas)
 
 

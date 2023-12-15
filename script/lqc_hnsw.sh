@@ -1,10 +1,10 @@
 
 cd ..
 
-data=rand100
+data=deep
 efConstruction=500
-M=50
-recall=0.90
+M=16
+recall=0.98
 shuf=
 
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src
@@ -17,7 +17,7 @@ shuf=
 
 
 cd src
-for i in {3..23}
+for i in {10..29}
 do
     shuf="_shuf${i}"
     nohup ./search_hnsw -e ${efConstruction} -m ${M} -d ${data} -r ${recall} -s ${shuf} 2>&1 >> ${i}.out &
