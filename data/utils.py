@@ -1,6 +1,7 @@
 import numpy as np
 import faiss
 import math
+import os
 from tqdm import tqdm
 import time
 import pickle
@@ -15,6 +16,7 @@ import matplotlib.pyplot as plt
 from pprint import pprint
 from requests import delete
 from scipy.spatial import distance as p_dist_func
+import struct
 
 plt.rcParams['mathtext.fontset'] = "stix"
 plt.rcParams['font.family'] = 'calibri'
@@ -350,6 +352,15 @@ def compute_lengths(X):
     lengths = np.linalg.norm(X_norm, axis=1)
     return lengths  
 
+def transform_kgraph2std(new_path, revG):
+    with open(new_path, 'wb') as f:
+        for i in range(len(revG)):
+            if i % 100000 == 0:
+                print(f'{i}/{len(revG)}')
+            # write binary to file
+            for j in range(len(revG[i])):
+                f.write(struct.pack('<i', revG[i][j]))
+            f.write(struct.pack('<i', -1))
 
 def get_query_length(X, Q):
     mean = np.mean(X, axis=0)

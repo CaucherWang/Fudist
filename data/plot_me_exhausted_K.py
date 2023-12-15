@@ -55,10 +55,8 @@ def get_density_scatter(k_occur, lid):
     # plt.xlabel('reach_delta_0_rigorous')
     # plt.xlabel('metric for dynamic bound')
     # plt.xlabel('delta_0')
-    # plt.xlabel(r'$K_0^{0.96}@0.98$')
+    plt.xlabel(r'$K_0^{0.96}@0.98$')
     # plt.xlabel(r'$\delta_0^{\forall}-g@0.98$')
-    # plt.xlabel(r'$\Sigma ME^{0.96}_{\delta_0}$@0.98')
-    plt.xlabel(r'$Area(ME^{0.96}_{\delta_0}$@0.98)-Interpolation')
     # plt.xlabel(r'$ME^{0.96}_{\delta_0}$@0.98')
     # plt.xlabel(r'$Kgraph-100-\hat{ME^{0.96}_{\delta_0}}$@0.90-exhausted')
     # plt.xlabel(r'$ME^{\forall}_{\delta_0}-reach$@0.98')
@@ -68,7 +66,7 @@ def get_density_scatter(k_occur, lid):
     plt.ylabel(r'HNSW(32) $LQC_{50}^{0.98}$')
     # plt.ylabel('1NN distance')
     # plt.tight_layout()
-    plt.xlim(0, 2*1e7)
+    plt.xlim(0, 1500)
     plt.ylim(0, 20000)
     # plt.tight_layout()
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
@@ -169,6 +167,41 @@ if __name__ == "__main__":
     # delta0_point = np.array(delta0_point)
     # print(delta0_point.shape, np.max(delta0_point), np.min(delta0_point))
     # exit(0)
+    
+    nsg_query_performance = resolve_performance_variance_log(nsg_query_performance_log_path)
+    nsg_query_performances = [np.array(nsg_query_performance)]
+    for i in range(5):
+        nsg_query_performances.append(np.array(resolve_performance_variance_log(nsg_query_performance_log_paths[i])))
+        print(nsg_query_performances[-1].shape, np.average(nsg_query_performances[-1]))
+    nsg_query_performances = np.array(nsg_query_performances)
+    nsg_query_performance_avg = np.average(nsg_query_performances, axis=0) 
+
+    
+    KLIST = [75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375 400, 425, 450, 475, 499]
+    # KLIST = [175, 200, 250, 300, 400, 499]
+    
+    me_exhausted_path = os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
+                                     '_K%d.ibin_clean')
+    # me_exhausted_path = os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
+    #                                  '_delta_point500_K%d.ibin_clean')
+
+    me_exhausted = []
+    for K in KLIST:
+        me_exhausted.append(read_ibin_simple(me_exhausted_path % K))
+    me_exhausted = np.array(me_exhausted)
+    
+    q = 649
+    me = me_exhausted[:, q]
+    plt.figure(figsize=(8, 6))
+    plt.plot(KLIST, me, **plot_info[0])
+    plt.xlabel(r'$K$')
+    plt.ylabel(r'$ME^{0.96}_{\delta_0}$@0.98-exhausted')
+    # plt.ylabel(r'$ME^{0.96}_{500}$@0.98-exhausted')
+    plt.text(0.3, 0.7, f'LQC on NSG={nsg_query_performance_avg[q]}', transform=plt.gca().transAxes, fontsize=18, verticalalignment='top')
+    plt.tight_layout()
+    plt.savefig(f'./figures/{dataset}/{dataset}-me-exhausted-K.png')
+    print(f'save to figure ./figures/{dataset}/{dataset}-me-exhausted-K.png')
+    exit(0)
 
 
     # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_K0_recall{target_recall:.2f}_prob{target_prob:.2f}'
@@ -180,30 +213,6 @@ if __name__ == "__main__":
     
     # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
     #                                                '_K100.ibin_clean'))
-    
-    KLIST = [75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375 ,400, 425, 450, 475, 499]
-    # KLIST = [175, 200, 250, 300, 400, 499]
-    me_exhausted_path = os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
-                                     '_K%d.ibin_clean')
-    # me_exhausted_path = os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
-    #                                  '_delta_point500_K%d.ibin_clean')
-
-    me_exhausted = []
-    for K in KLIST:
-        me_exhausted.append(read_ibin_simple(me_exhausted_path % K))
-    me_exhausted = np.array(me_exhausted).T
-    # query_hardness = np.average(me_exhausted, axis=0)
-    from scipy import interpolate
-    areas = []
-    for sample in me_exhausted:
-        f = interpolate.interp1d(KLIST, sample)
-        xnew = np.linspace(min(KLIST), max(KLIST), num=1000, endpoint=True)
-        ynew = f(xnew)
-        area = np.trapz(ynew, xnew)
-        areas.append(area)
-    
-    query_hardness = np.array(areas)
-
 
     
     # K = 500
@@ -255,8 +264,8 @@ if __name__ == "__main__":
 
     # get_density_scatter(query_performances[0], query_performances[1])
     # get_density_scatter(query_performance1, query_performance2)
-    get_density_scatter(query_hardness, query_performance_avg)
-    # get_density_scatter(query_hardness, nsg_query_performance_avg)
+    # get_density_scatter(query_hardness, query_performance_avg)
+    get_density_scatter(query_hardness, nsg_query_performance_avg)
     # get_density_scatter(query_hardness, kgraph_query_performance)
     # get_density_scatter(query_hardness, me)
     

@@ -97,8 +97,8 @@ params = {
 }
 source = './data/'
 result_source = './results/'
-dataset = 'gauss100'
-recall = 0.86
+dataset = 'deep'
+recall = 0.98
 idx_postfix = '_plain'
 efConstruction = params[dataset]['ef']
 Kbuild = 100
@@ -153,11 +153,15 @@ if __name__ == "__main__":
     
     nsg_query_performance = resolve_performance_variance_log(nsg_query_performance_log_path)
     nsg_query_performances = [np.array(nsg_query_performance)]
-    for i in range(9):
+    for i in range(5):
         nsg_query_performances.append(np.array(resolve_performance_variance_log(nsg_query_performance_log_paths[i])))
         print(nsg_query_performances[-1].shape, np.average(nsg_query_performances[-1]))
     nsg_query_performances = np.array(nsg_query_performances)
     nsg_query_performance_avg = np.average(nsg_query_performances, axis=0) 
+    for i in range(nsg_query_performances[0].shape[0]):
+        if 20000 > nsg_query_performance_avg[i] > 10000:
+            print(f'{i}: {nsg_query_performance_avg[i]}')
+    exit(0)
     # half = int(nsg_query_performances.shape[0] / 2)
     # query_performance1 = np.average(nsg_query_performances[:half], axis=0)
     # query_performance2 = np.average(nsg_query_performances[half: ], axis=0)  
