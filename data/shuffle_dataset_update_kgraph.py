@@ -15,10 +15,13 @@ def update_gt(gt, original_positions):
             gt[i][j] = original_positions[gt[i][j]]
     return gt
 
+@njit(parallel=True)
 def update_kgraph(kgraph, old2new):
     # update the kgraph
     new_graph = np.zeros(kgraph.shape, dtype=np.int32)
     for i in range(kgraph.shape[0]):
+        if i % 100000 == 0:
+            print(i)
         cur_row = old2new[i]
         for j in range(kgraph.shape[1]):
             new_graph[cur_row][j] = old2new[kgraph[i][j]]
@@ -26,39 +29,27 @@ def update_kgraph(kgraph, old2new):
 
 source = './data/'
 datasets = ['rand100']
-shuf_num = 4
+# shuf_num = 4
 if __name__ == '__main__':
     for dataset in datasets:
         dir = os.path.join(source, dataset)
-        data_file = os.path.join(dir, f'{dataset}_base.fvecs')
-        query_file = os.path.join(dir, f'{dataset}_query.fvecs')
-        gt_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs')
-        gt_hard_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_hard')
-        gt_easy_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_easy')
-        shuf_gt_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_shuf{shuf_num}')
-        shuf_gt_hard_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_hard_shuf{shuf_num}')
-        shuf_gt_easy_file = os.path.join(dir, f'{dataset}_groundtruth.ivecs_easy_shuf{shuf_num}')
-        shuf_data_file = os.path.join(dir, f'{dataset}_base.fvecs_shuf{shuf_num}')
-        pos_file = os.path.join(dir, f'{dataset}_shuf{shuf_num}.ibin')
-        kgraph_path = os.path.join(dir, f'{dataset}_self_groundtruth.ivecs_clean')
-        new_kgraph_path = os.path.join(dir, f'{dataset}_self_groundtruth.ivecs_clean_shuf{shuf_num}')
-        X = read_fvecs(data_file)
-        # Q = read_fvecs(query_file)
-        # gt_shuf = read_ivecs(shuf_gt_file)
-        # gt = read_ivecs(gt_file)
-        G = read_ivecs_dim(kgraph_path, 500)[:, :500]
-        # gt_hard = read_ivecs(gt_hard_file)
-        # gt_easy = read_ivecs(gt_easy_file)
-        nx = X.shape[0]
-        
-        # Get the number of rows in the matrix
-        rows = X.shape[0]
-        # Create an array of indices representing the original positions
-        original_positions = read_ibin_simple(pos_file)
-        old2new = [ 0 for i in range(rows) ]
-        for i in range(rows):
-            old2new[original_positions[i]] = i
+        kgraph_path = os.path.join(dir, f'{dataset}.efanna')
+        G = read_ivecs(kgraph_path)
+        rows = G.shape[0]
+
+        for shuf_num in range(3, 30):
+            pos_file = os.path.join(dir, f'{dataset}_shuf{shuf_num}.ibin')
+            # kgraph_path = os.path.join(dir, f'{dataset}_self_groundtruth.ivecs_clean')
+            # new_kgraph_path = os.path.join(dir, f'{dataset}_self_groundtruth.ivecs_clean_shuf{shuf_num}')
             
-        new_graph = update_kgraph(G, old2new)
-        write_ivecs(new_kgraph_path, new_graph)
+            new_kgraph_path = os.path.join(dir, f'{dataset}.efanna_shuf{shuf_num}')
+
+            # Create an array of indices representing the original positions
+            original_positions = read_ibin_simple(pos_file)
+            old2new = [ 0 for i in range(rows) ]
+            for i in range(rows):
+                old2new[original_positions[i]] = i
+                
+            new_graph = update_kgraph(G, old2new)
+            write_ivecs(new_kgraph_path, new_graph)
         

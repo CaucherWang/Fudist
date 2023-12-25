@@ -1,5 +1,6 @@
 #include "nsg.h"
 #include "kgraph.h"
+#include "mrng.h"
 #include <stack>
 #include<set>
 #include <algorithm>
@@ -76,6 +77,10 @@ int get_dim(const char* fname){
 
 vector<vector<int>>* read_ibin(const char* fname, int& n, int& d){
     ifstream fin(fname, ios::binary);
+    if(!fin.is_open()){
+        cerr << "Cannot open file " << fname << endl;
+        exit(-1);
+    }
     fin.read(reinterpret_cast<char*>(&n), sizeof(n));
     fin.read(reinterpret_cast<char*>(&d), sizeof(d));    
     std::cerr << "index: " << n << " * "  << d << endl;
@@ -123,6 +128,10 @@ void write_ibin_simple(const char* fname, vector<int>& res){
 vector<vector<unsigned>>* read_rev_graph(string graph_path, int n){
     vector<vector<unsigned>>* revG = new vector<vector<unsigned>>();
     ifstream fin(graph_path, ios::binary);
+    if(!fin.is_open()){
+        cerr << "Cannot open file " << graph_path << endl;
+        exit(-1);
+    }
     for(int i = 0; i < n; i++){
         vector<unsigned> tmp;
         unsigned k;
@@ -135,6 +144,36 @@ vector<vector<unsigned>>* read_rev_graph(string graph_path, int n){
     }
     fin.close();
     return revG;
+}
+
+void get_mrng_positions(vector<vector<int>>& MRNG, vector<vector<int>>& kgraph, vector<int>& res){
+    vector<vector<int>> positions(MRNG.size(), vector<int>());
+    int index = 0;
+    #pragma omp parallel for
+    for(int i = 0; i < MRNG.size(); ++i){
+        #pragma omp critical
+        {
+            if(++index % 100000 == 0){
+                std::cerr << "cur: " << index << endl;
+            }
+        }
+        positions[i].resize(MRNG[i].size(), -1);
+        int index_i = 0, index_j = 0;
+        while (index_i < MRNG[i].size())
+        {
+            while((kgraph[i][index_j] == i) || (index_j < kgraph[i].size() && MRNG[i][index_i] != kgraph[i][index_j])){
+                ++index_j;
+            }
+            positions[i][index_i] = (index_j + 1);
+            ++index_i;
+            ++index_j;
+        }
+    }
+
+    // put posititions into res
+    for(int i = 0; i < MRNG.size(); ++i){
+        move(positions[i].begin(), positions[i].end(), back_inserter(res));
+    }
 }
 
 void get_reachable_in_usg(int root, unordered_map<int, unordered_set<int>>& cur_knn_components,
@@ -930,13 +969,13 @@ void get_K0_from_fixed_delta_point_recall_prob(vector<vector<int>>& KGraph, int 
 
 int main(int argc, char * argv[]) {
 
-    int method = 0; // 0: kgraph 1: hnsw 2: nsg
-    int purpose = 2; // 0: get delta0^p@Acc 1: get me_exhausted 2: get me^p_delta_0@Acc 3: get K_0^p@Acc (only KGraph)
-    string data_str = "deep";   // dataset name
-    int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
+    int method = 4; // 0: kgraph 1: hnsw 2: nsg 3: mrng 4:ssg 5:taumg
+    int purpose = 1; // 0: get delta0^p@Acc 1: get me_exhausted 2: get me^p_delta_0@Acc 3: get K_0^p@Acc (only KGraph)
+                    // 100: for mrng, get the positions distirbution
+    string data_str = "rand100";   // dataset name
     int subk=50;
-    float recall = 0.98;
-    float prob = 0.96;
+    float recall = 0.86;
+    float prob = 0.80;
     int recall_target = ceil(recall * subk);
     int prob_target = ceil(prob * subk);
 
@@ -953,7 +992,7 @@ int main(int argc, char * argv[]) {
     if(data_str.find("rand") != string::npos || data_str.find("gauss") != string::npos)
         GT_num_str = "_50000";
     else if(data_str.find("deep") != string::npos || data_str.find("sift") != string::npos)
-        GT_num_str = "_100000";
+        GT_num_str = "_50000";
     else if( data_str.find("word2vec") != string::npos || data_str.find("glove") != string::npos)
         GT_num_str = "_50000";
     string groundtruth_path_str = base_path_str + "/" + data_str + "/" + data_str + "_groundtruth" + GT_num_str + ".ivecs" + shuf_postfix + query_postfix;
@@ -1022,9 +1061,10 @@ int main(int argc, char * argv[]) {
     }else if(method == 1){
         // hnsw
         string ef_str = "500"; 
-        int M = 16;
+        int M = 50;
         index_postfix = "_plain";
-        index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str + "_M" + to_string(M) + "_hnsw.ibin" + index_postfix + shuf_postfix;
+        index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_ef" + ef_str 
+                + "_M" + to_string(M) + "_hnsw.ibin" + index_postfix + shuf_postfix;
         string delta0_path_str = result_prefix_str + "_delta0_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4) 
         + "_ef" + ef_str + "_M" + to_string(M) + ".ibin_hnsw" + index_postfix + shuf_postfix + query_postfix;
         cerr << "index path: " << index_path_str << endl; 
@@ -1065,10 +1105,98 @@ int main(int argc, char * argv[]) {
             result_path_str = result_prefix_str + "_me_exhausted_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
             + "_L" + to_string(L) + "_R" + to_string(R) + "_C" + to_string(C) + ".ibin_nsg" + index_postfix + shuf_postfix + query_postfix;
             cerr << "result path: "<< result_path_str << endl;
-            auto delta0_point = read_ibin_simple(result_path_str.c_str());
+            auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
             get_me_exhausted_from_delta0_point_recall_prob(nsg->final_graph_, subk, GT, *delta0_point, recall_target, prob_target, res);
         }
 
+    }else if(method == 3){
+        // mrng
+        int K=2047;
+        index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_K" + to_string(K) + ".mrng" ;
+        string delta0_path_str = result_prefix_str + "_delta0_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4) 
+        + "_K" + to_string(K) + ".ibin_mrng" ;
+        cerr << "index path: " << index_path_str << endl; 
+        auto mrng = new MRNG();
+        mrng->Load(index_path_str.c_str());
+        
+        if(purpose == 0){
+            revg_path_str = base_path_str + "/" + data_str + "/" + data_str + "_K" + to_string(K) + ".mrng_reversed_std";
+            cerr << "revG path:" << revg_path_str << endl;
+            auto revg = read_rev_graph(revg_path_str, mrng->_size);
+            result_path_str = delta0_path_str;
+            cerr << "result path: "<< result_path_str << endl;
+            get_delta0_max_knn_rscc_point_recall_prob(mrng->_graph, subk, GT, k, *revg, recall_target, prob_target, res);
+        }else if(purpose == 1){
+            result_path_str = result_prefix_str + "_me_exhausted_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
+            + "_K" + to_string(K) + ".ibin_mrng" ;
+            cerr << "result path: "<< result_path_str << endl;
+            auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
+            get_me_exhausted_from_delta0_point_recall_prob(mrng->_graph, subk, GT, *delta0_point, recall_target, prob_target, res);
+        }else if(purpose == 100){
+            index_postfix = "";
+            string kgraph_od = "_10000";
+            int Kbuild = 10000; 
+            index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_self_groundtruth" + kgraph_od + ".ivecs" + index_postfix + shuf_postfix;
+            cerr << "index path: " << index_path_str << endl; 
+            int n;
+            auto kgraph_vec= read_kgraph(index_path_str,n, Kbuild );
+            // KGraph *kgraph = new KGraph(index_path_str.c_str(), nullptr, &space, dim, 0, Kbuild);
+            // auto kgraph_vec = kgraph->get_graph();
+
+            result_path_str = result_prefix_str + "_positions_distribution.ibin_mrng" ;
+            cerr << "result path: "<< result_path_str << endl;
+            res.resize(kgraph_vec->size(), -1);
+            get_mrng_positions(mrng->_graph, *kgraph_vec, res);
+        }
+
+    }else if(method == 4){
+        // ssg
+        int K=2047, alpha = 60;
+        index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_K" + to_string(K) + "_alpha" + to_string(alpha) + ".ssg" ;
+        string delta0_path_str = result_prefix_str + "_delta0_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4) 
+        + "_K" + to_string(K) + "_alpha" + to_string(alpha) + ".ibin_ssg" ;
+        cerr << "index path: " << index_path_str << endl; 
+        auto ssg = new MRNG();
+        ssg->Load(index_path_str.c_str());
+        
+        if(purpose == 0){
+            revg_path_str = base_path_str + "/" + data_str + "/" + data_str + "_K" + to_string(K) + "_alpha" + to_string(alpha) + ".ssg_reversed_std";
+            cerr << "revG path:" << revg_path_str << endl;
+            auto revg = read_rev_graph(revg_path_str, ssg->_size);
+            result_path_str = delta0_path_str;
+            cerr << "result path: "<< result_path_str << endl;
+            get_delta0_max_knn_rscc_point_recall_prob(ssg->_graph, subk, GT, k, *revg, recall_target, prob_target, res);
+        }else if(purpose == 1){
+            result_path_str = result_prefix_str + "_me_exhausted_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
+            + "_K" + to_string(K) + "_alpha" + to_string(alpha)+ ".ibin_ssg" ;
+            cerr << "result path: "<< result_path_str << endl;
+            auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
+            get_me_exhausted_from_delta0_point_recall_prob(ssg->_graph, subk, GT, *delta0_point, recall_target, prob_target, res);
+        }
+    }else if(method == 5){
+        // tau-mg
+        int K=2047;
+        index_path_str = base_path_str + "/" + data_str + "/" + data_str + "_K" + to_string(K) + ".taumg" ;
+        string delta0_path_str = result_prefix_str + "_delta0_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4) 
+        + "_K" + to_string(K) + ".ibin_taumg" ;
+        cerr << "index path: " << index_path_str << endl; 
+        auto taumg = new MRNG();
+        taumg->Load(index_path_str.c_str());
+        
+        if(purpose == 0){
+            revg_path_str = base_path_str + "/" + data_str + "/" + data_str + "_K" + to_string(K) + ".taumg_reversed_std";
+            cerr << "revG path:" << revg_path_str << endl;
+            auto revg = read_rev_graph(revg_path_str, taumg->_size);
+            result_path_str = delta0_path_str;
+            cerr << "result path: "<< result_path_str << endl;
+            get_delta0_max_knn_rscc_point_recall_prob(taumg->_graph, subk, GT, k, *revg, recall_target, prob_target, res);
+        }else if(purpose == 1){
+            result_path_str = result_prefix_str + "_me_exhausted_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
+            + "_K" + to_string(K) + ".ibin_taumg" ;
+            cerr << "result path: "<< result_path_str << endl;
+            auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
+            get_me_exhausted_from_delta0_point_recall_prob(taumg->_graph, subk, GT, *delta0_point, recall_target, prob_target, res);
+        }
     }
 
     cerr << "program finished" << endl;

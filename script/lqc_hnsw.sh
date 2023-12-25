@@ -1,28 +1,28 @@
 
 cd ..
 
-data=deep
-efConstruction=500
-M=16
-recall=0.98
+data=rand100
+efConstruction=2000
+M=100
+recall=0.94
 shuf=
 
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -march=native
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -ffast-math -march=native
-# g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -ffast-math -march=native -fopenmp
+g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -ffast-math -march=native -fopenmp
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -lprofiler
 # path=./data/
 # result_path=./results/
 
 
 cd src
-for i in {10..29}
+for i in {3..29}
 do
     shuf="_shuf${i}"
     nohup ./search_hnsw -e ${efConstruction} -m ${M} -d ${data} -r ${recall} -s ${shuf} 2>&1 >> ${i}.out &
 done
-# ./search_hnsw -e ${efConstruction} -m ${M} -d ${data} -r ${recall} -s ${shuf}
+./search_hnsw -e ${efConstruction} -m ${M} -d ${data} -r ${recall} -s ${shuf}
 
 echo "done"
 

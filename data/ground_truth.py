@@ -31,20 +31,24 @@ if __name__ == '__main__':
         # # read data vectors
         print(f"Reading {dataset} from {query_path}.")
         Q = read_fvecs(query_path)
+        # Q = X[:10, :]
         # Q = read_fbin(query_path)[:2000]
         # norms = np.linalg.norm(Q, axis=1)
         QD = Q.shape[1]
         print(Q.shape)
         # Q = L2_norm_dataset(Q)
         
-<<<<<<< HEAD
-        K = 200000
-=======
-        K = 100000
->>>>>>> 5d71ea3e330774046d3d6ef436f99c46eae54961
+        K = 10000
         
         GT_I, GT_D = compute_GT_CPU(X, Q, K)
         print(GT_I.shape)
+        # real_gt = read_ivecs_cnt(os.path.join(path, f'{dataset}_self_groundtruth_10000.ivecs'), 10)
+        # real_gt_distance = np.zeros((real_gt.shape[0], real_gt.shape[1]))
+        # for i in range(real_gt.shape[0]):
+        #     for j in range(real_gt.shape[1]):
+        #         real_gt_distance[i][j] = euclidean_distance(X[i] , X[real_gt[i][j]])
+        # pprint(np.where(GT_I != real_gt))
+        # exit(0)
         
         # gt = read_ibin(os.path.join(path, f'groundtruth.img_0.1M.text_0.2k.ibin'))
         # for i in range(gt.shape[0]):

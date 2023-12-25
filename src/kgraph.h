@@ -414,3 +414,37 @@ KGraph::searchKnnKGraph(float *query_data, size_t k, int ef, Metric & metric, in
     }
     return result;
 };
+
+
+vector<vector<int>>* read_kgraph(const string data_file_path, int &n, int KG){
+    n = 0;
+    int d = 0;
+    vector<vector<int>>*ret = NULL;
+    std::cerr << data_file_path << std::endl;
+    std::ifstream in(data_file_path, std::ios::binary);
+    if (!in.is_open()) {
+        std::cerr << "open file error" << std::endl;
+        exit(-1);
+    }
+
+    in.read((char*)&d, 4);
+    
+    std::cerr << "Dimensionality - " <<  d <<std::endl;
+    in.seekg(0, std::ios::end);
+    std::ios::pos_type ss = in.tellg();
+    size_t fsize = (size_t)ss;
+    n = (size_t)(fsize / (d + 1) / 4);
+    assert(KG <= d);
+
+    ret = new vector<vector<int>>(n, vector<int>(KG, 0));
+    std::cerr << "Cardinality - " << n << std::endl;
+    in.seekg(0, std::ios::beg);
+    for (size_t i = 0; i < n; i++) {
+        in.seekg(4, std::ios::cur);
+        in.read((char*)((*ret)[i].data()), KG * sizeof(int));
+        in.seekg((d - KG) * sizeof(int), std::ios::cur);
+    }
+    in.close();
+    std::cerr << "read kgraph finished" << std::endl;
+    return ret;
+}

@@ -16,6 +16,7 @@ fig = plt.figure(figsize=(6,4.8))
 def get_density_scatter(k_occur, lid):
     x = k_occur
     y = lid
+    corr = np.corrcoef(x, y)[0][1]
     # x = np.log2(x)
     # y = np.array([np.log2(i) if i > 0 else i for i in y])
     # y = np.log(n_rknn)
@@ -38,6 +39,7 @@ def get_density_scatter(k_occur, lid):
 
     fig = plt.figure(figsize=(12,10))
     using_mpl_scatter_density(fig, x, y)
+    plt.plot([0, 100000], [0, 100000], color='black', linewidth=2)
     # plt.xlabel('k-occurrence (450)')
     # plt.xlabel('Query difficulty')
     # plt.xlabel('reach_delta_0_rigorous')
@@ -45,22 +47,23 @@ def get_density_scatter(k_occur, lid):
     # plt.xlabel('delta_0')
     # plt.xlabel(r'$\delta_0^{\forall}-g@0.98$')
     # plt.xlabel(r'$ME^{\forall}_{\delta_0}$@0.98-exhausted')
-    plt.xlabel(r'$\hat{ME^{0.96}_{\delta_0}}$@0.98-exhausted')
+    # plt.xlabel(r'$\hat{ME^{0.96}_{\delta_0}}$@0.98-exhausted')
     # plt.xlabel(r'$ME^{\forall}_{\delta_0}-reach$@0.98')
     # plt.ylabel(r'NDC (recall@50>0.98)')
-    plt.ylabel('NDC')
+    # plt.ylabel('NDC')
     # plt.xlabel('local intrinsic dimensionality')
     # plt.ylabel('1NN distance')
     # plt.tight_layout()
-    # plt.xlim(0, 50000)
-    plt.ylim(0, 20000)
+    # plt.xlim(0, 100000)
+    # plt.ylim(0, 100000)
     # plt.tight_layout()
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
     # print(f'save to figure ./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-k-occur-1NN-dist.png')
     # print(f'save to figure ./figures/{dataset}/{dataset}-query-k-occur-1NN-dist.png')
-    plt.savefig(f'./figures/{dataset}/{dataset}-query-difficulty.png')
-    print(f'save to figure ./figures/{dataset}/{dataset}-query-difficulty.png')
+    plt.text(0.15, 0.8, f'corr={corr:.3f}', color='red', fontsize=40, horizontalalignment='left', verticalalignment='top', transform=fig.transFigure)
+    plt.savefig(f'./figures/{dataset}/{dataset}-me-ndc.png')
+    print(f'save to figure ./figures/{dataset}/{dataset}-me-ndc.png')
 
 def resolve_performance_variance_log(file_path):
     print(f'read {file_path}')
@@ -415,18 +418,29 @@ def get_me(G, GT_list, delta0_point, K, recall):
     union_ret_set = union_ret_set.union(knn_set)
     return len(union_ret_set)
 
+
+params = {
+    'gauss100':{'M': 50, 'ef': 500, 'L': 200, 'R': 100, 'C': 500, 'KMRNG':9999, 
+                'recall':0.86, 'prob':0.86, 'lognum': 21},
+    'rand100': {'M': 50, 'ef': 500, 'L': 200, 'R': 100, 'C': 500, 'KMRNG':9999, 
+                'recall':0.86, 'prob':0.86,'lognum': 27},
+    'deep': {'M': 16, 'ef': 500, 'L': 50, 'R': 32, 'C': 500, 'recall':0.98}, 
+    'sift': {'M': 16, 'ef': 500, 'L': 50, 'R': 32, 'C': 500, 'recall':0.98},
+}
+
 source = './data/'
 result_source = './results/'
-dataset = 'sift'
+dataset = 'gauss100'
 idx_postfix = '_plain'
 Kbuild = 30
-M = 16
-efConstruction = 500
-R = 32
-L = 40
-C = 500
-target_recall = 0.98
-target_prob = 0.96
+M = params[dataset]['M']
+efConstruction = params[dataset]['ef']
+R = params[dataset]['R']
+L = params[dataset]['L']
+C = params[dataset]['C']
+KMRNG = params[dataset]['KMRNG']
+target_recall = params[dataset]['recall']
+target_prob = params[dataset]['prob']
 select = 'hnsw'
 if __name__ == "__main__":
     base_path = os.path.join(source, dataset, f'{dataset}_base.fvecs')
@@ -456,11 +470,6 @@ if __name__ == "__main__":
     kgraph_query_performance_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K{Kbuild}_perform_variance.log')
     in_ds_kgraph_query_performance_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K{Kbuild}_perform_variance.log_in-dataset')
     in_ds_kgraph_query_performance_recall_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K{Kbuild}_perform_variance{target_recall}.log_in-dataset')
-    query_performance_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance{target_recall}.log_plain')
-    query_performance_log_paths = []
-    for i in range(3, 7):
-        query_performance_log_paths.append(os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance{target_recall}.log_plain_shuf{i}'))
-
 
     query_performance = None
     G = None
@@ -530,15 +539,16 @@ if __name__ == "__main__":
                 
         # G = read_ivecs(os.path.join(source, dataset, f'{dataset}_self_groundtruth.ivecs_clean'))
     elif select == 'hnsw':
-        
         # me_delta0_path = os.path.join(source, dataset, f'{dataset}_me_delta0_recall{target_recall:.2f}.ibin_hnsw_ef{efConstruction}_M{M}{idx_postfix}')
         # delta0_max_knn_rscc_point_recall_path = os.path.join(source, dataset, f'{dataset}_delta0_max_knn_rscc_point_recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}')
         # # delta0_point = read_ibin_simple(delta0_max_knn_rscc_point_recall_path)
         # delta0_point_cpp = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_delta0_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}'))
-        me_exhausted_cpp = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}'))
+        me_exhausted_cpp = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_'
+        f'recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}'))
         # diff = np.where(delta0_point != delta0_point_cpp)
         # G = read_ibin(standard_hnsw_path)
-        query_performance = np.array(resolve_performance_variance_log(query_performance_log_path))
+        query_performance = np.array(resolve_performance_variance_log(os.path.join(result_source, dataset, f'SIMD_{dataset}_'
+                        f'ef{efConstruction}_M{M}_perform_variance{target_recall}.log_plain')))
         me_exhausted = me_exhausted_cpp
         # query_performances = [query_performance]
         # for i in range(4):
@@ -552,10 +562,15 @@ if __name__ == "__main__":
         # ep, G = read_nsg(os.path.join(source, dataset, f'{dataset}_L{L}_R{R}_C{C}.nsg'))
         nsg_query_performance_recall = np.array(resolve_performance_variance_log(os.path.join(result_source, dataset, f'{dataset}_nsg_L{L}_R{R}_C{C}_perform_variance{target_recall:.2f}.log')))
         query_performance = nsg_query_performance_recall
+    elif select == 'mrng':
+        me_exhausted = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
+                                                '_K9999.ibin_mrng'))
+        query_performance = resolve_performance_variance_log(os.path.join(result_source, dataset, f'SIMD_{dataset}_MRNG_K{KMRNG}_perform_variance{target_recall:.2f}.log'))
+
     else:
         print(f'invalid select: {select}')
         
-        
+    print(np.corrcoef(me_exhausted, query_performance))
     get_density_scatter(me_exhausted, query_performance)
     
     # hardness_K = 150

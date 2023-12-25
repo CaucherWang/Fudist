@@ -583,7 +583,7 @@ static void test_performance(data_t *massQ, size_t vecsize, size_t qsize, Hierar
                 cerr << index << " / " << qsize << endl;
         }
 
-        int lowef = k, highef, curef, tmp, bound = 100000;
+        int lowef = k, highef, curef, tmp, bound = 4000;
         long success = -1;
         Metric metric;
 
@@ -714,7 +714,7 @@ int main(int argc, char * argv[]) {
     string data_str = "gauss100";   // dataset name
     float recall;
     char recall_char[5], M_char[5], ef_char[5], shuf_char[10];
-    int data_type = 0; // 0 for float, 1 for uint8, 2 for int8
+    int data_type = 0; // 0de    for float, 1 for uint8, 2 for int8
     int M, ef;
     string M_str, ef_str, recall_str, shuf_str; 
 
@@ -1192,6 +1192,17 @@ int main(int argc, char * argv[]) {
         auto appr_alg = new HierarchicalNSW<float>(&space, index_path, false);
         appr_alg->num_deleted_ = 0;
         cerr << "max level: " << appr_alg->maxlevel_ << endl;
+        // vector<int>out_degree(appr_alg->max_elements_, 0);
+        // vector<int>in_degree(appr_alg->max_elements_, 0);
+        // appr_alg->getDegrees(out_degree, in_degree);
+        // // print the average out-degree
+        // double avg_out_degree = 0;
+        // for(int i = 0; i < appr_alg->max_elements_; ++i){
+        //     avg_out_degree += out_degree[i];
+        // }
+        // avg_out_degree /= appr_alg->max_elements_;
+        // cerr << "avg out degree: " << avg_out_degree << endl;
+        // exit(0);
         
         vector<std::priority_queue<std::pair<float, labeltype >>> answers;
         get_gt(G.data, Q.data, appr_alg->max_elements_, Q.n, space, Q.d, answers, k, subk, *appr_alg);

@@ -5,20 +5,20 @@ import struct
           
 source = './data/'
 result_source = './results/'
-dataset = 'deep'
+dataset = 'rand100'
 idx_postfix = '_plain'
 shuf_postfix = ''
-efConstruction = 500
+efConstruction = 2000
 Kbuild = 275
-M=16
+M=140
 R = 32
 L = 40
 C = 500
 
 if __name__ == "__main__":
     base_path = os.path.join(source, dataset, f'{dataset}_base.fvecs')
-    revG_path = os.path.join(source, dataset, f'{dataset}_K{Kbuild}_self_groundtruth.ivecs_reversed')
-    # revG_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}_hnsw.ibin{idx_postfix}_reversed')
+    # revG_path = os.path.join(source, dataset, f'{dataset}_K{Kbuild}_self_groundtruth.ivecs_reversed')
+    revG_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}_hnsw.ibin{idx_postfix}_reversed')
     # revG_path = os.path.join(source, dataset, f'{dataset}_L{L}_R{R}_C{C}.nsg_reversed')
     new_path = revG_path + '_std'   
     

@@ -36,8 +36,8 @@ def get_density_scatter(k_occur, lid):
     fig = plt.figure(figsize=(12,10))
     using_mpl_scatter_density(fig, x, y)
     # plt.xlabel(r'$LQC^{0.98}_{50}$ over KGraph')
-    plt.xlabel(r'$LQC^{0.86}_{50}$ over 5 NSG instance')
-    plt.ylabel(r'$LQC^{0.86}_{50}$ over 5 NSG instance')
+    # plt.xlabel(r'$LQC^{0.86}_{50}$ over 5 NSG instance')
+    # plt.ylabel(r'$LQC^{0.86}_{50}$ over 5 NSG instance')
     # plt.xlabel(r'$LQC^{0.98}_{50}$ over 10 HNSW instance')
     # plt.ylabel(r'$LQC^{0.98}_{50}$ over 10 HNSW instance')
 
@@ -52,8 +52,8 @@ def get_density_scatter(k_occur, lid):
     # plt.ylabel('local intrinsic dimensionality')
     # plt.ylabel('1NN distance')
     # plt.tight_layout()
-    plt.xlim(0, 100000)
-    plt.ylim(0, 100000)
+    plt.xlim(0, 70000)
+    plt.ylim(0, 70000)
     
     # plt.tight_layout()
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
@@ -90,15 +90,16 @@ def resolve_delta_log(file_path):
         return deltas
 
 params = {
-    'gauss100':{'M': 50, 'ef': 500, 'L': 200, 'R': 100, 'C': 500},
+    'gauss100':{'M': 100, 'ef': 2000, 'L': 200, 'R': 100, 'C': 500},
+    # 'rand100': {'M': 100, 'ef': 2000, 'L': 200, 'R': 100, 'C': 500},
     'rand100': {'M': 50, 'ef': 500, 'L': 200, 'R': 100, 'C': 500},
     'deep': {'M': 16, 'ef': 500, 'L': 50, 'R': 32, 'C': 500},
     'sift': {'M': 16, 'ef': 500, 'L': 50, 'R': 32, 'C': 500},
 }
 source = './data/'
 result_source = './results/'
-dataset = 'deep'
-recall = 0.98
+dataset = 'rand100'
+recall = 0.86
 idx_postfix = '_plain'
 efConstruction = params[dataset]['ef']
 Kbuild = 100
@@ -124,44 +125,56 @@ if __name__ == "__main__":
     ma_base_dist_path = os.path.join(source, dataset, f'{dataset}_ma_base_distance.fbin')
     query_performance_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance{recall:.2f}.log_plain')
     # kgraph_query_performance_log_path2 = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K100_perform_variance.log')
-    in_ds_query_performance_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance.log_in-dataset_plain_1th')
+    # in_ds_query_performance_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance.log_in-dataset_plain_1th')
+    query_performance_log_path2 = os.path.join(result_source, dataset, f'SIMD_{dataset}_ef2000_M100_perform_variance{recall:.2f}.log_plain')
     nsg_query_performance_log_path = os.path.join(result_source, dataset, f'{dataset}_nsg_L{L}_R{R}_C{C}_perform_variance{recall:.2f}.log')
     query_performance_log_paths = []
+    query_performance_log_paths2 = []
     nsg_query_performance_log_paths = []
-    for i in range(3, 24):
+    for i in range(3, 30):
         query_performance_log_paths.append(os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance{recall:.2f}.log_plain_shuf{i}'))
+        query_performance_log_paths2.append(os.path.join(result_source, dataset, f'SIMD_{dataset}_ef2000_M100_perform_variance{recall:.2f}.log_plain_shuf{i}'))
     for i in range(3, 12):
         nsg_query_performance_log_paths.append(os.path.join(result_source, dataset, f'{dataset}_nsg_L{L}_R{R}_C{C}_perform_variance{recall:.2f}.log_shuf{i}'))
 
 
+
     query_performance = np.array(resolve_performance_variance_log(query_performance_log_path))
     query_performances = [query_performance]
-    for i in range(9):
+    query_performance2 = np.array(resolve_performance_variance_log(query_performance_log_path2))
+    query_performances2 = [query_performance2]
+    for i in range(21):
         query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_paths[i])))
         print(query_performances[-1].shape, np.average(query_performances[-1]))
+        # query_performances2.append(np.array(resolve_performance_variance_log(query_performance_log_paths2[i])))
+        # print(query_performances2[-1].shape, np.average(query_performances2[-1]))
     query_performances = np.array(query_performances)
     query_performance_avg = np.average(query_performances, axis=0)
+    # query_performances2 = np.array(query_performances2)
+    # query_performance_avg2 = np.average(query_performances2, axis=0)
+    # print(np.corrcoef(query_performance_avg, query_performance_avg2))
+    # get_density_scatter(query_performance_avg, query_performance_avg2)
     # half = int(query_performances.shape[0] / 2)
     # query_performance1 = np.average(query_performances[:half], axis=0)
     # query_performance2 = np.average(query_performances[half:], axis=0)  
     # get_density_scatter(query_performance1, query_performance2)
     # print(np.corrcoef(query_performance1, query_performance2))
     # # get_density_scatter(query_performances[-2], query_performances[-1])
-    # # print(np.corrcoef(query_performances[-1], query_performances[-2]))
+    # # # print(np.corrcoef(query_performances[-1], query_performances[-2]))
     # exit(0)      
 
     
     nsg_query_performance = resolve_performance_variance_log(nsg_query_performance_log_path)
     nsg_query_performances = [np.array(nsg_query_performance)]
-    for i in range(5):
+    for i in range(9):
         nsg_query_performances.append(np.array(resolve_performance_variance_log(nsg_query_performance_log_paths[i])))
         print(nsg_query_performances[-1].shape, np.average(nsg_query_performances[-1]))
     nsg_query_performances = np.array(nsg_query_performances)
     nsg_query_performance_avg = np.average(nsg_query_performances, axis=0) 
-    for i in range(nsg_query_performances[0].shape[0]):
-        if 20000 > nsg_query_performance_avg[i] > 10000:
-            print(f'{i}: {nsg_query_performance_avg[i]}')
-    exit(0)
+    # for i in range(nsg_query_performances[0].shape[0]):
+    #     if 20000 > nsg_query_performance_avg[i] > 10000:
+    #         print(f'{i}: {nsg_query_performance_avg[i]}')
+    # exit(0)
     # half = int(nsg_query_performances.shape[0] / 2)
     # query_performance1 = np.average(nsg_query_performances[:half], axis=0)
     # query_performance2 = np.average(nsg_query_performances[half: ], axis=0)  
@@ -203,8 +216,8 @@ if __name__ == "__main__":
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-performance-distribution.png')
     # print(f'save to file ./figures/{dataset}/{dataset}-query-performance-distribution.png')
     
-    a = kgraph_query_performance
-    b = query_performance_avg
+    a = query_performance_avg
+    b = nsg_query_performance_avg
     
     get_density_scatter(a,b)
     # calculate spearman correlation

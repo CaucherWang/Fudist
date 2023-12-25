@@ -1199,6 +1199,8 @@ if __name__ == "__main__":
         # exit(0)
         G = nsg
         delta0_max_knn_rscc_point_recall_prob_path = os.path.join(source, dataset, f'{dataset}_delta0_max_knn_rscc_point_recall{target_recall}_prob{target_prob}_L{L}_R{R}_C{C}.ibin_nsg')
+    elif exp == 'mrng':
+        
     else:
         print(exp)
         raise NotImplementedError

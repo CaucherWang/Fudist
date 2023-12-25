@@ -12,6 +12,7 @@ Note that in the whole algorithm we do not calculate the square root of the dist
 #include <vector>
 #include <iostream>
 #include "./hnswlib/space_l2.h"
+#include "matrix.h"
 
 using namespace std;
 using namespace hnswlib;
