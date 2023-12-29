@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <boost/unordered/unordered_map.hpp>
 #include <boost/pending/disjoint_sets.hpp>
+#include <coin/CbcModel.hpp>
+#include <coin/OsiClpSolverInterface.hpp>
 
 
 using UF_SET = boost::disjoint_sets< boost::associative_property_map< boost::unordered_map<int, int> >, boost::associative_property_map< boost::unordered_map<int, int> > >;
@@ -739,6 +741,162 @@ void bfs_shortest_paths(vector<vector<int>>& subG, int source, unordered_set<int
 
 
 }
+
+void node_weighted_dijkstra_shortest_paths(vector<vector<int>>& subG, int source, unordered_set<int>&dest,
+                            unordered_set<int>&points_in_paths, vector<int>& weight){
+    // the indexes of the subG is the indexes in gt_list
+    // we collect the points in the shortest paths, without the terminals themselves
+    int n = subG.size();
+    unordered_set<int> finished;
+    int finish_size = 0;
+    int dest_size = dest.size();
+
+    while(finish_size < dest_size){
+        vector<int>dist(n, INT_MAX);
+        vector<int>prev(n, -1);  // Add a vector to keep track of the previous node in the shortest path
+        vector<bool> visited(n, false);
+        dist[source] = 0;
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+        pq.push(make_pair(0, source));
+
+        int dest_point = -1;
+
+        while(!pq.empty()){
+            auto p = pq.top();
+            pq.pop();
+            auto d = p.first;
+            auto u = p.second;
+
+            if(visited[u]) continue;  // u has been visited (we might put the same node multi-times to pq)
+            visited[u] = true;
+
+            if(dest.count(u) > 0 && finished.count(u) == 0){
+                finish_size++;
+                finished.insert(u);
+                dest_point = u;
+                break;
+            }
+
+            for(auto& v: subG[u]){
+                int wei = weight[u];
+                if(points_in_paths.count(u) > 0){
+                    wei = 0;
+                }
+                if(!visited[v] && dist[v] > dist[u] + wei){
+                    dist[v] = dist[u] + wei;
+                    prev[v] = u;  // Update the previous node for v
+                    pq.push(make_pair(dist[v], v));
+                }
+            }
+        }
+
+        assert(dest_point != -1);
+        int v = prev[dest_point];
+        while(v != -1){
+            points_in_paths.insert(v);
+            v = prev[v];
+        }
+
+    }
+}
+
+void exact_ilp(vector<vector<int>>& subG, int source, unordered_set<int>&dest, vector<int>& weight,
+                            unordered_set<int>&points_in_paths){
+    OsiClpSolverInterface solver;
+
+}
+
+int get_me_exhaustive_from_delta0_point_recall_prob_atom(vector<vector<int>>& G, int k, unsigned* gt_list, int delta0_point,
+                                                    int recall, int prob){
+    vector<pair<int, unordered_set<int>>> reachable_pairs;
+    unordered_map<int,int> id2index;
+    for(int i =0 ; i < delta0_point; ++i){
+        id2index[gt_list[i]] = i;
+    }
+
+    vector<vector<int>>subgraph;
+    // obtain subgraph
+    get_subgraph(G, gt_list, delta0_point, subgraph, id2index);
+    vector<int> weight(subgraph.size(), 0);
+    for(int i = 0; i < subgraph.size(); ++i){
+        weight[i] = G[gt_list[i]].size();
+    }
+
+    // obtain reachable pairs by bfs shortest path
+    get_reachable_pairs_from_delta_point_recall_prob(subgraph, k, gt_list, delta0_point, recall, prob, id2index, reachable_pairs);
+
+    if(reachable_pairs.size() == 0){
+        if(delta0_point >= 10000)   return -delta0_point;
+        unordered_set<int> V;
+        for(int i = 0; i < delta0_point; ++i){
+            V.insert(gt_list[i]);
+            for(auto& v: G[gt_list[i]]){
+                V.insert(v);
+            }
+        }
+        return -V.size();
+    }
+
+
+    unordered_set<int> points_in_paths;
+    for(auto& p: reachable_pairs){
+        auto& src = p.first;
+        auto& dest = p.second;
+        node_weighted_dijkstra_shortest_paths(subgraph, src, dest, points_in_paths, weight);
+    }
+
+    int res = 0;
+
+    // all neighbros on G of points in shortest paths should be in ME_exhausted
+    // since in exhausted search, we must test them to select the best direction
+    for(auto &p : points_in_paths){
+        res += weight[p];
+    }
+
+    // The terminals themselves are also in ME_exhausted
+    for(auto &p:reachable_pairs){
+        auto& dest = p.second;
+        for(auto& d: dest){
+            if(points_in_paths.count(d) == 0){
+                res++;
+                points_in_paths.insert(d);
+            }
+        }
+    }
+
+    return res;
+
+}
+
+void get_me_exhaustive_from_delta0_point_recall_prob(vector<vector<int>>& G, int k, Matrix<unsigned> GT_list, vector<int>& delta0_point,
+                                                    int recall, int prob, vector<int>&res){
+    
+    int cur = 0;
+#pragma omp parallel for
+    for(int i = 0; i < GT_list.n; ++i){
+        #pragma omp critical
+        {
+            if(++cur % 100 == 0){
+                std::cerr << "cur: " << cur << endl;
+            }
+        }
+        auto gt_list = GT_list[i];
+        if(delta0_point[i] == GT_list.d + 1){
+            delta0_point[i] = GT_list.d;
+        }
+        if(delta0_point[i] > GT_list.d){
+            cerr << "Query id = " << i << "\tdelta0_point: " << delta0_point[i] <<  "\tGT_list.d: " << GT_list.d << endl;
+            exit(-1);
+        }
+        auto me_exhaustive = get_me_exhaustive_from_delta0_point_recall_prob_atom(G, k, gt_list, delta0_point[i], recall, prob);
+        if(me_exhaustive < 0){
+            me_exhaustive = -me_exhaustive;
+            cerr << "Query id = " << i << endl;
+        }
+        res[i] = me_exhaustive;
+    }
+}
+
 
 
 int get_me_exhausted_from_delta0_point_recall_prob_atom(vector<vector<int>>& G, int k, unsigned* gt_list, int delta0_point,
