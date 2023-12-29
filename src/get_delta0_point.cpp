@@ -736,10 +736,54 @@ void bfs_shortest_paths(vector<vector<int>>& subG, int source, unordered_set<int
             v = prev[v];
         }
     }
-
-
 }
 
+void prim_mst(vector<vector<int>>& subG, int source, unordered_set<int>&dest, unordered_set<int>&points_in_paths){
+    // the indexes of the subG is the indexes in gt_list
+    // we collect the points in the shortest paths, without the terminals themselves
+    int n = subG.size();
+    vector<int> dist(n, INT_MAX);
+    vector<int> prev(n, -1);  // Add a vector to keep track of the previous node in the shortest path
+
+    unordered_set<int> visited, next; // visited and next step visit nodes
+
+    int finish_size = 0;
+    int dest_size = dest.size();
+
+    dist[source] = 0;
+    visited.insert(source);
+
+    vector<vector<int>> treeG(n, vector<int>());
+
+    for (auto &v : subG[source]) {
+        dist[v] = 1;
+        treeG[source].push_back(v);
+        next.insert(v);
+    }
+
+    while (dest_size < finish_size) {
+        if (next.empty()) {
+            break;
+        }
+        auto u = *next.begin();
+        if (visited.count(u) > 0) {
+            continue;
+        }
+        visited.insert(u);
+        if (dest.count(u) > 0) {
+            ++finish_size;
+        }
+        for (auto& v: subG[u]) {
+            if (!visited.count(v)) {
+                dist[v] = 1;
+                treeG[u].push_back(v);
+                next.insert(v);
+            }
+        }
+    }
+
+    bfs_shortest_paths(treeG, source, dest, points_in_paths);
+}
 
 int get_me_exhausted_from_delta0_point_recall_prob_atom(vector<vector<int>>& G, int k, unsigned* gt_list, int delta0_point,
                                                     int recall, int prob){
