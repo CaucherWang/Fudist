@@ -7,7 +7,7 @@ from utils import *
 
 source = './data/'
 # datasets = ['deep', 'gist', 'glove1.2m', 'msong', 'sift', 'tiny5m', 'ukbench', 'word2vec']
-datasets = ['rand100']
+datasets = ['gauss100']
 
                 
 if __name__ == "__main__":
@@ -33,6 +33,18 @@ if __name__ == "__main__":
         data_path_norm = os.path.join(path, f'{dataset}_base.fvecs_norm')
         query_path_norm = os.path.join(path, f'{dataset}_query.fvecs_norm')
         query_path_norm_bin = os.path.join(path, f'{dataset}_query.fbin_norm')
+        delta0_path = os.path.join(path, f'{dataset}_delta0_forall_point_recall0.86_prob0.96_K2047.ibin_mrng')
+        
+        delta0 = read_ibin_simple(delta0_path)
+        print(f'max delta0: {max(delta0)}')
+        plt.hist(delta0, bins=100, edgecolor='black', linewidth=1.2)
+        plt.xlabel('delta0')
+        plt.ylabel('#Queries')
+        plt.tight_layout()
+        plt.savefig(f'./figures/{dataset}/{dataset}-delta0.png')
+        print(f'save to figure ./figures/{dataset}/{dataset}-delta0.png')
+        exit(0)
+        
 
         # read data vectors
         # print(f"Reading {dataset} from {data_path}.")
