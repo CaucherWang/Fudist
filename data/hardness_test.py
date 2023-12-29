@@ -1,13 +1,7 @@
 import queue
-from turtle import circle
-from requests import get
-from sklearn.utils import deprecated
-from sympy import Q
 from utils import *
 from queue import PriorityQueue
 import os
-from unionfind import UnionFind
-import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import mpl_scatter_density # adds projection='scatter_density'
 
@@ -110,10 +104,10 @@ def resolve_performance_variance_log_multi(file_path):
 
 params = {
     'gauss100':{'M': 100, 'ef': 2000, 'L': 200, 'R': 100, 'C': 500, 
-                'recall':0.94,
+                'recall':0.86, 'KMRNG':2047,
                 'rp':{
                     0.86: { # 0.53
-                        'prob': 0.92,
+                        'prob': 0.96,
                         'lognum': 21
                     },
                     0.94: { # 0.50
@@ -164,7 +158,7 @@ params = {
 }
 source = './data/'
 result_source = './results/'
-dataset = 'rand100'
+dataset = 'gauss100'
 target_recall = params[dataset]['recall']
 target_prob = params[dataset]['rp'][target_recall]['prob']
 idx_postfix = '_plain'
@@ -221,12 +215,15 @@ if __name__ == "__main__":
     # print(delta0_point.shape, np.max(delta0_point), np.min(delta0_point))
     # exit(0)
 
-    query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
-                                                   f'_K{KMRNG}_alpha60.ibin_ssg'))
-
+    # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
+    #                                                f'_delta_point925_K{KMRNG}.ibin_mrng'))
 
     # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
-    #                                                f'_K{KMRNG}.ibin_mrng'))
+    #                                                f'_K{KMRNG}_alpha60.ibin_ssg'))
+
+
+    query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
+                                                   f'_K{KMRNG}.ibin_mrng'))
 
     # query_hardness = resolve_performance_variance_log(os.path.join(result_source, dataset, f'SIMD_{dataset}_MRNG_K{KMRNG}_perform_variance{target_recall:.2f}.log'))
 

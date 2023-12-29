@@ -1127,13 +1127,14 @@ void get_K0_from_fixed_delta_point_recall_prob(vector<vector<int>>& KGraph, int 
 
 int main(int argc, char * argv[]) {
 
-    int method = 4; // 0: kgraph 1: hnsw 2: nsg 3: mrng 4:ssg 5:taumg
+    int method = 3; // 0: kgraph 1: hnsw 2: nsg 3: mrng 4:ssg 5:taumg
     int purpose = 1; // 0: get delta0^p@Acc 1: get me_exhausted 2: get me^p_delta_0@Acc 3: get K_0^p@Acc (only KGraph)
+                    // 4: get me_fixed_delta_0@Acc
                     // 100: for mrng, get the positions distirbution
-    string data_str = "rand100";   // dataset name
+    string data_str = "gauss100";   // dataset name
     int subk=50;
     float recall = 0.86;
-    float prob = 0.80;
+    float prob = 0.96;
     int recall_target = ceil(recall * subk);
     int prob_target = ceil(prob * subk);
 
@@ -1290,6 +1291,12 @@ int main(int argc, char * argv[]) {
             cerr << "result path: "<< result_path_str << endl;
             auto delta0_point = read_ibin_simple(delta0_path_str.c_str());
             get_me_exhausted_from_delta0_point_recall_prob(mrng->_graph, subk, GT, *delta0_point, recall_target, prob_target, res);
+        }else if(purpose == 4){
+            int delta_point = 925;
+            result_path_str = result_prefix_str + "_me_exhausted_forall_point_recall" + to_string(recall).substr(0, 4) + "_prob" + to_string(prob).substr(0, 4)
+            + "_delta_point"+ to_string(delta_point) + "_K" + to_string(K) + ".ibin_mrng";
+            cerr << "result path: "<< result_path_str << endl;
+            get_me_exhausted_from_fixed_delta_point_recall_prob(mrng->_graph, subk, GT, delta_point, recall_target, prob_target, res);
         }else if(purpose == 100){
             index_postfix = "";
             string kgraph_od = "_10000";
