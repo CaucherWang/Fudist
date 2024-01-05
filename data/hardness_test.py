@@ -103,12 +103,13 @@ def resolve_performance_variance_log_multi(file_path):
         return ndcs
 
 params = {
-    'gauss100':{'M': 100, 'ef': 2000, 'L': 200, 'R': 100, 'C': 500, 
+    'gauss100':{'M': 160, 'ef': 2000, 'L': 500, 'R': 200, 'C': 2000, 
                 'recall':0.86, 'KMRNG':2047,
                 'rp':{
-                    0.86: { # 0.53
-                        'prob': 0.96,
-                        'lognum': 21
+                    0.86: { # 0.60
+                        'prob': 0.86,
+                        'lognum': 21,
+                        'nsglognum':21
                     },
                     0.94: { # 0.50
                         'prob':0.94,
@@ -119,7 +120,7 @@ params = {
     'rand100': {'M': 140, 'ef': 2000, 'L': 200, 'R': 100, 'C': 500, 
                 'recall':0.86, 'KMRNG':2047,
                 'rp':{
-                    0.86: { # 0.65
+                    0.86: { # 0.68
                         'prob': 0.86,
                         'lognum':21
                     },
@@ -130,7 +131,7 @@ params = {
                 }
                 },
     'deep': {'M': 16, 'ef': 500, 'L': 50, 'R': 32, 'C': 500, 
-             'recall':0.92, 'KMRNG':2047, 
+             'recall':0.98, 'KMRNG':2047, 
              'rp':{
                  0.98:{ # 0.85
                      'prob':0.98,
@@ -199,7 +200,7 @@ if __name__ == "__main__":
     nsg_query_performance_log_path = os.path.join(result_source, dataset, f'{dataset}_nsg_L{L}_R{R}_C{C}_perform_variance{target_recall:.2f}.log')
     query_performance_log_paths = []
     nsg_query_performance_log_paths = []
-    for i in range(3, 12):
+    for i in range(3, 30):
         nsg_query_performance_log_paths.append(os.path.join(result_source, dataset, f'{dataset}_nsg_L{L}_R{R}_C{C}_perform_variance{target_recall:.2f}.log_shuf{i}'))
     for i in range(3, 30):
         query_performance_log_paths.append(os.path.join(result_source, dataset, f'SIMD_{dataset}_ef{efConstruction}_M{M}_perform_variance{target_recall}.log_plain_shuf{i}'))
@@ -209,14 +210,14 @@ if __name__ == "__main__":
     # exit(0)
     
     # delta0_point_path = os.path.join(source, dataset, f'{dataset}_delta0_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
-    #                                  '_K50.ibin_clean')
+    #                                  '_K2047.ibin_mrng')
     # delta0_point = read_ibin_simple(delta0_point_path)
     # delta0_point = np.array(delta0_point)
     # print(delta0_point.shape, np.max(delta0_point), np.min(delta0_point))
     # exit(0)
 
     # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
-    #                                                f'_delta_point925_K{KMRNG}.ibin_mrng'))
+    #                                                f'_delta_point391_K{KMRNG}.ibin_mrng'))
 
     # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
     #                                                f'_K{KMRNG}_alpha60.ibin_ssg'))
@@ -236,6 +237,9 @@ if __name__ == "__main__":
     
     # query_hardness = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}'
     #                                                '_K100.ibin_clean'))
+    
+    # GT_dist = read_fvecs(GT_dist_path)
+    # query_hardness = get_lids(GT_dist[:, :50], 50)
     
     # KLIST = [75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375 ,400, 425, 450, 475, 499]
     # # KLIST = [75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375 ,400]
@@ -292,16 +296,19 @@ if __name__ == "__main__":
     # print(get_graph_quality(hnsw, G, 500))
     # exit(0)
     
+    # remove 750 and 9092 elements in query hardness
+    query_hardness = np.delete(query_hardness, [2207, 5153])
     
     
-    query_performance = np.array(resolve_performance_variance_log(query_performance_log_path))
-    query_performances = [query_performance]
-    print(query_performances[-1].shape, np.average(query_performances[-1]))
-    for i in range(params[dataset]['rp'][target_recall]['lognum']):
-        query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_paths[i])))
-        print(query_performances[-1].shape, np.average(query_performances[-1]))
-    query_performances = np.array(query_performances)
-    query_performance_avg = np.average(query_performances, axis=0)
+    
+    # query_performance = np.array(resolve_performance_variance_log(query_performance_log_path))
+    # query_performances = [query_performance]
+    # print(query_performances[-1].shape, np.average(query_performances[-1]))
+    # for i in range(params[dataset]['rp'][target_recall]['lognum']):
+    #     query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_paths[i])))
+    #     print(query_performances[-1].shape, np.average(query_performances[-1]))
+    # query_performances = np.array(query_performances)
+    # query_performance_avg = np.average(query_performances, axis=0)
     # # half = int(query_performances.shape[0] / 2)
     # # query_performance1 = np.average(query_performances[:half], axis=0)
     # # query_performance2 = np.average(query_performances[half: ], axis=0)        
@@ -309,19 +316,20 @@ if __name__ == "__main__":
     # # kgraph_query_performance_recall = np.array(resolve_performance_variance_log(kgraph_query_performance_recall_log_path))
     
 
-    # nsg_query_performance = resolve_performance_variance_log(nsg_query_performance_log_path)
-    # nsg_query_performances = [np.array(nsg_query_performance)]
-    # for i in range(5):
-    #     nsg_query_performances.append(np.array(resolve_performance_variance_log(nsg_query_performance_log_paths[i])))
-    #     print(nsg_query_performances[-1].shape, np.average(nsg_query_performances[-1]))
-    # nsg_query_performances = np.array(nsg_query_performances)
-    # nsg_query_performance_avg = np.average(nsg_query_performances, axis=0) 
+    nsg_query_performance = resolve_performance_variance_log(nsg_query_performance_log_path)
+    nsg_query_performances = [np.array(nsg_query_performance)]
+    for i in range(params[dataset]['rp'][target_recall]['lognum']):
+        nsg_query_performances.append(np.array(resolve_performance_variance_log(nsg_query_performance_log_paths[i])))
+        print(nsg_query_performances[-1].shape, np.average(nsg_query_performances[-1]))
+    nsg_query_performances = np.array(nsg_query_performances)
+    nsg_query_performance_avg = np.average(nsg_query_performances, axis=0) 
+    query_performance_avg = nsg_query_performance_avg
     
     # kgraph_query_performance_log_path = os.path.join(result_source, dataset, f'SIMD_{dataset}_kGraph_K100_perform_variance{target_recall:.2f}.log_clean')
 
     # kgraph_query_performance = resolve_performance_variance_log(kgraph_query_performance_log_path)
 
-
+    query_performance_avg = np.delete(query_performance_avg, [2207, 5153])
 
     # print(np.corrcoef(query_hardness, nsg_query_performance_avg))
     print(np.corrcoef(query_hardness, query_performance_avg))

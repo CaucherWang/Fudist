@@ -1,10 +1,10 @@
 
 cd ..
 
-data=rand100
-efConstruction=2000
-M=100
-recall=0.94
+data=deep
+efConstruction=500
+M=16
+recall=0.98
 shuf=
 
 # g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src
@@ -17,12 +17,14 @@ g++ ./src/search_hnsw.cpp -O3 -o ./src/search_hnsw -I ./src -ffast-math -march=n
 
 
 cd src
-for i in {3..29}
-do
-    shuf="_shuf${i}"
-    nohup ./search_hnsw -e ${efConstruction} -m ${M} -d ${data} -r ${recall} -s ${shuf} 2>&1 >> ${i}.out &
-done
-./search_hnsw -e ${efConstruction} -m ${M} -d ${data} -r ${recall} -s ${shuf}
+# for i in {3..23}
+# do
+#     shuf="_shuf${i}"
+#     nohup ./search_hnsw -e ${efConstruction} -m ${M} -d ${data} -r ${recall} -s ${shuf} 2>&1 >> ${i}.out &
+# done
+# nohup 
+./search_hnsw -e ${efConstruction} -m ${M} -d ${data} -r ${recall} 
+# 2>&1 >> nohup.out &
 
 echo "done"
 

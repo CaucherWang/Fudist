@@ -1,9 +1,9 @@
 
 cd ..
 
-data='deep'
+data='rand100'
 kod='_2048'
-m=2
+m=0
 
 g++ -o ./src/index_mrng ./src/index_mrng.cpp -I ./src/ -O3 -mavx2 -ffast-math -march=native -fopenmp
 

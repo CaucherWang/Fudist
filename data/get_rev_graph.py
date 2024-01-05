@@ -7,8 +7,9 @@ fig = plt.figure(figsize=(6,4.8))
 
 source = './data/'
 result_source = './results/'
-exp = 'ssg'
-dataset = 'sift'
+exp = 'hnsw'
+dataset = 'deep'
+
 idx_postfix = '_plain'
 Kbuild = 475
 kgraph_od = '_10000'
@@ -49,11 +50,12 @@ if __name__ == "__main__":
         # transform_kgraph2std(new_path, revG)
         # revG = read_obj(reversed_kgraph_path)
     elif exp == 'hnsw':
-        efConstruction = 2000
-        M = 100
-        index_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}.index_plain')
-        standard_hnsw_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}_hnsw.ibin{idx_postfix}')
-        standard_reversed_hnsw_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}_hnsw.ibin{idx_postfix}_reversed')
+        efConstruction = 500
+        M = 8
+        postfix = ''
+        index_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}.index_plain{postfix}')
+        standard_hnsw_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}_hnsw.ibin{idx_postfix}{postfix}')
+        standard_reversed_hnsw_path = os.path.join(source, dataset, f'{dataset}_ef{efConstruction}_M{M}_hnsw.ibin{idx_postfix}{postfix}_reversed')
 
         Q = read_fvecs(query_path)
         hnsw = read_hnsw_index_aligned(index_path, Q.shape[1])

@@ -13,6 +13,20 @@ import mpl_scatter_density # adds projection='scatter_density'
 
 fig = plt.figure(figsize=(6,4.8))
 
+def resolve_temp_log(file_path):
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
+        queries = []
+        mes = []
+        for line in lines:
+            if(len(line) < 10):
+                continue
+            line = line.strip()
+            eles = line.split()
+            queries.append(int(eles[3]))
+            mes.append(int(eles[5]))
+        return queries, mes
+
 def get_density_scatter(k_occur, lid):
     x = k_occur
     y = lid
@@ -54,7 +68,7 @@ def get_density_scatter(k_occur, lid):
     # plt.xlabel('local intrinsic dimensionality')
     # plt.ylabel('1NN distance')
     # plt.tight_layout()
-    # plt.xlim(0, 100000)
+    # plt.xlim(0, 20000)
     # plt.ylim(0, 100000)
     # plt.tight_layout()
     # plt.savefig(f'./figures/{dataset}/{dataset}-query-k_occurs-lid-scatter.png')
@@ -420,17 +434,19 @@ def get_me(G, GT_list, delta0_point, K, recall):
 
 
 params = {
-    'gauss100':{'M': 50, 'ef': 500, 'L': 200, 'R': 100, 'C': 500, 'KMRNG':9999, 
-                'recall':0.86, 'prob':0.86, 'lognum': 21},
-    'rand100': {'M': 50, 'ef': 500, 'L': 200, 'R': 100, 'C': 500, 'KMRNG':9999, 
-                'recall':0.86, 'prob':0.86,'lognum': 27},
-    'deep': {'M': 16, 'ef': 500, 'L': 50, 'R': 32, 'C': 500, 'recall':0.98}, 
+    'gauss100':{'M': 100, 'ef': 2000, 'L': 200, 'R': 100, 'C': 500, 'KMRNG':9999, 
+                'recall':0.86, 'prob':0.86},
+    # 0.86 -> 0.86
+    'rand100': {'M': 100, 'ef': 2000, 'L': 200, 'R': 100, 'C': 500, 'KMRNG':9999, 
+                'recall':0.86, 'prob':0.86},
+    'deep': {'M': 16, 'ef': 500, 'L': 50, 'R': 32, 'C': 500, 'KMRNG':2047, 
+             'recall':0.98, 'prob':0.98}, 
     'sift': {'M': 16, 'ef': 500, 'L': 50, 'R': 32, 'C': 500, 'recall':0.98},
 }
 
 source = './data/'
 result_source = './results/'
-dataset = 'gauss100'
+dataset = 'deep'
 idx_postfix = '_plain'
 Kbuild = 30
 M = params[dataset]['M']
@@ -543,13 +559,14 @@ if __name__ == "__main__":
         # delta0_max_knn_rscc_point_recall_path = os.path.join(source, dataset, f'{dataset}_delta0_max_knn_rscc_point_recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}')
         # # delta0_point = read_ibin_simple(delta0_max_knn_rscc_point_recall_path)
         # delta0_point_cpp = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_delta0_forall_point_recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}'))
-        me_exhausted_cpp = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_'
+        me_exhausted = read_ibin_simple(os.path.join(source, dataset, f'{dataset}_me_exhausted_forall_point_'
         f'recall{target_recall:.2f}_prob{target_prob:.2f}_ef{efConstruction}_M{M}.ibin_hnsw{idx_postfix}'))
         # diff = np.where(delta0_point != delta0_point_cpp)
         # G = read_ibin(standard_hnsw_path)
         query_performance = np.array(resolve_performance_variance_log(os.path.join(result_source, dataset, f'SIMD_{dataset}_'
                         f'ef{efConstruction}_M{M}_perform_variance{target_recall}.log_plain')))
-        me_exhausted = me_exhausted_cpp
+        # qids, me_exhausted = resolve_temp_log('{i}.out')
+        # query_performance = query_performance[np.array(qids)]
         # query_performances = [query_performance]
         # for i in range(4):
         #     query_performances.append(np.array(resolve_performance_variance_log(query_performance_log_paths[i])))
@@ -571,6 +588,10 @@ if __name__ == "__main__":
         print(f'invalid select: {select}')
         
     print(np.corrcoef(me_exhausted, query_performance))
+    # plt.scatter(np.array(me_exhausted), np.array(query_performance), s=1)
+    # plt.tight_layout()
+    # plt.savefig(f'./figures/{dataset}/{dataset}-me-exhausted-ndc.png')
+    # print(f'save to file ./figures/{dataset}/{dataset}-me-exhausted-ndc.png')
     get_density_scatter(me_exhausted, query_performance)
     
     # hardness_K = 150

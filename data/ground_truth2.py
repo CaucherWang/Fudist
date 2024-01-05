@@ -10,9 +10,6 @@ import numpy as np
 from utils import *
 from multiprocessing.dummy import Pool as ThreadPool
 
-source = './data/'
-datasets = ['sift']
-
 
 # source = '/home/hadoop/wzy/dataset/'
 source = './data/'

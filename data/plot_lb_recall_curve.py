@@ -4,7 +4,7 @@ import numpy as np
 from pprint import pprint
 from utils import *
 
-fig = plt.figure(figsize=(8,4))
+# fig = plt.figure(figsize=(8,4))
 
 def resolve_log(file_path):
     rset = {}
@@ -74,28 +74,29 @@ def resolve_lb_recall_log(file_path):
 
 source = './results/'
 dataset = 'deep'
-shuf = "_1th_new_metric_level"
+shuf = ""
 # shuf = '_1th'
 ef = 500
 # M = datsets_map[dataset][0]
 M = 16
 KNSW = 16
 path = os.path.join(source, dataset)
-hnsw_me_delta0_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_lb_recall.log_plain_me_delta0_level9')
-hnsw_lid_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_lb_recall.log_plain_lid_level9')
-# hnsw_avg_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_.log_plain_1th_lid_level4')
+# hnsw_me_delta0_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_lb_recall.log_plain_me_delta0_level9')
+# hnsw_lid_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_lb_recall.log_plain_lid_level9')
+hnsw_avg_path = os.path.join(path, f'SIMD_{dataset}_ef{ef}_M{M}_perform_variance.log_plain')
 
 k = 50
 width = 2
+recall, ndc = resolve_log(hnsw_avg_path)
 # hnsw_easy = resolve_log(hnsw_easy_path)
 # hnsw_hard = resolve_log(hnsw_hard_path)
 # hnsw_avg = resolve_log(hnsw_avg_path)
-hnsws =[]
-hnsw_lid, recalls = resolve_lb_recall_log(hnsw_lid_path)
-hnsw_me_delta0, recalls = resolve_lb_recall_log(hnsw_me_delta0_path)
+# hnsws =[]
+# hnsw_lid, recalls = resolve_lb_recall_log(hnsw_lid_path)
+# hnsw_me_delta0, recalls = resolve_lb_recall_log(hnsw_me_delta0_path)
 
-ndc_lid = hnsw_lid[-1]
-ndc_me_delta0 = hnsw_me_delta0[-1]
+# ndc_lid = hnsw_lid[-1]
+# ndc_me_delta0 = hnsw_me_delta0[-1]
 
 # Define the number of bins
 num_bins = 50
@@ -110,13 +111,26 @@ bin_width = (end - start) / num_bins
 # Define the bin edges
 bin_edges = np.arange(start, end + bin_width, bin_width)
 
-# Plot the histogram
-plt.hist(ndc_lid, bins=bin_edges, edgecolor='black')
+plt.figure(figsize=(6.5,4.5))
 
-plt.xlim(0, 50000)
-plt.ylim(0, 220)
-plt.xlabel('NDC when LB recall@50=0.98')
-plt.ylabel('#queries')
+# Plot the histogram
+# plt.hist(ndc_lid, bins=bin_edges, edgecolor='black')
+plt.plot(ndc[:-2], recall[:-2], **plot_info[0])
+print(ndc[3], recall[3])
+
+# mark (480, recall[2]) and (2916, recall[2])
+plt.text(480, recall[2], f'|', fontsize=12)
+plt.text(2916, recall[2], f'|', fontsize=12)
+plt.text(ndc[2], 42, '_', fontsize=12)
+plt.text(ndc[2], 100, '_', fontsize=12)
+
+plt.xlim(480, 3500)
+plt.ylim(40, 100)
+plt.xticks([1000,2000,3000], ['1k','2k','3k'])
+# plt.xlabel('NDC when LB recall@50=0.98')
+plt.xlabel('#distance calculations')
+plt.ylabel('Recall@50')
+# plt.ylabel('#queries')
 plt.tight_layout()
 plt.savefig(f'./figures/{dataset}/{dataset}{shuf}-lid-ndc-hist.png',  format='png')
 print(f'save to ./figures/{dataset}/{dataset}{shuf}-lid-ndc-hist.png')

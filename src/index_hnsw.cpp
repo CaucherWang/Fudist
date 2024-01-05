@@ -82,11 +82,11 @@ int main(int argc, char * argv[]) {
         }
     }
     
-    int read_N = 300000000;
+    int read_N = 500000000;
     size_t report = 100000;
     if(data_type == 0){
-            // Matrix<float> *X = new Matrix<float>(data_path, read_N);
-            Matrix<float> *X = new Matrix<float>(data_path);
+            Matrix<float> *X = new Matrix<float>(data_path, read_N);
+            // Matrix<float> *X = new Matrix<float>(data_path);
             size_t D = X->d;
             size_t N = X->n;
             L2Space space(D);

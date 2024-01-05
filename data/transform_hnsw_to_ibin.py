@@ -10,7 +10,7 @@ fig = plt.figure(figsize=(6,4.8))
           
 source = './data/'
 result_source = './results/'
-dataset = 'rand100'
+dataset = 'deep'
 idx_postfix = '_plain'
 shuf_postfix = ''
 efConstruction = 2000

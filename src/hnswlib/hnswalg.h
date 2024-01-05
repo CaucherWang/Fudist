@@ -573,7 +573,8 @@ namespace hnswlib {
 #endif          
                 adsampling::tot_dist_calculation++;
                 adsampling::tot_full_dist ++;
-                metric->ndc++;
+                if(metric != nullptr)
+                    metric->ndc++;
                 lowerBound = dist;
                 top_candidates.emplace(dist, ep_id);
                 candidate_set.emplace(-dist, ep_id);
@@ -628,7 +629,8 @@ namespace hnswlib {
                         adsampling::distance_time += stopw.getElapsedTimeMicro();
 #endif                  
                         adsampling::tot_full_dist++;
-                        metric->ndc++;
+                        if(metric != nullptr)
+                            metric->ndc++;
                         if (top_candidates.size() < ef || lowerBound > dist) {                      
                             candidate_set.emplace(-dist, candidate_id);
                             if (!has_deletions || !isMarkedDeleted(candidate_id))
@@ -5129,8 +5131,8 @@ adsampling::tot_dimension+= seanet::D;
 
                 //plain
         std::priority_queue<std::pair<dist_t, labeltype >>
-        searchKnnPlain(void *query_data, size_t k, int adaptive=0, Metric* metric = nullptr, size_t ef = -1) const {
-            size_t use_ef = ef >=0 ? ef : ef_;
+        searchKnnPlain(void *query_data, size_t k, int adaptive=0, Metric* metric = nullptr, int ef = 0) const {
+            size_t use_ef = ef >0 ? ef : ef_;
             std::priority_queue<std::pair<dist_t, labeltype >> result;
             if (cur_element_count == 0) return result;
 

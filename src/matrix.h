@@ -23,9 +23,9 @@ public:
     size_t M, Ks, sub_vec_len;
 
     Matrix(); // Default
-    Matrix(char * data_file_path); // IO
+    Matrix(char * data_file_path, int N = -1); // IO
     Matrix(char * data_file_path, bool from_fdat); // IO from fdat (pq codebook)
-    Matrix(char * data_file_path, int N); // IO from fbin
+    Matrix(char * data_file_path, bool is_bin, int N); // IO from fbin
     Matrix(size_t n, size_t d); // Matrix of size n * d
 
     // Deconstruction
@@ -79,7 +79,7 @@ void Matrix<T>::read_bin(char *data_file_path){
 }
 
 template <typename T>
-Matrix<T>::Matrix(char *data_file_path){    
+Matrix<T>::Matrix(char *data_file_path, int N){    
     n = 0;
     d = 0;
     data = NULL;
@@ -109,6 +109,10 @@ Matrix<T>::Matrix(char *data_file_path){
     std::ios::pos_type ss = in.tellg();
     size_t fsize = (size_t)ss;
     n = (size_t)(fsize / (d + 1) / 4);
+    if(N != -1 && N <= n){
+        assert(n >= N);
+        n = N;
+    }
     data = new T [(size_t)n * (size_t)d];
     std::cerr << "Cardinality - " << n << std::endl;
     in.seekg(0, std::ios::beg);
@@ -120,7 +124,7 @@ Matrix<T>::Matrix(char *data_file_path){
 }
 
 template <typename T>
-Matrix<T>::Matrix(char *data_file_path, int N){
+Matrix<T>::Matrix(char *data_file_path, bool is_bin, int N){
     std::string filename(data_file_path);
     std::string extension = "bin";
     size_t pos = filename.length() - extension.length();

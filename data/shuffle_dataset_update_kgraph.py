@@ -28,7 +28,7 @@ def update_kgraph(kgraph, old2new):
     return new_graph
 
 source = './data/'
-datasets = ['rand100']
+datasets = ['gist']
 # shuf_num = 4
 if __name__ == '__main__':
     for dataset in datasets:

@@ -243,3 +243,20 @@ tcmalloc: large alloc 2000044032 bytes == 0x55d8e6ee2000 @  0x7f772f797c7b 0x7f7
 tcmalloc: large alloc 2000003072 bytes == 0x55d95e246000 @  0x7f772f797c7b 0x7f772c2470ce 0x7f772c2a1726 0x7f772c294475 0x7f772c334e51 0x55d8cb613ec6 0x55d8cb614aae 0x55d8cb658601 0x55d8cb5ade85 0x55d8cb5cdc71 0x55d8cb658395 0x55d8cb5ade85 0x55d8cb5af273 0x55d8cb6bcc82 0x55d8cb6c6e1e 0x55d8cb6c700b 0x55d8cb6c80fa 0x55d8cb6c818c 0x7f772ea8e840 0x55d8cb66d03a (nil)
 tcmalloc: large alloc 2000044032 bytes == 0x563d86882000 @  0x7fcd4e2f9c7b 0x7fcd4ada90ce 0x7fcd4ae00e57 0x7fcd4ae01a6f 0x7fcd4aea7c5d 0x563d69bc183c 0x563d69bf7b40 0x563d69c3c3a1 0x563d69b90e85 0x563d69bb0c71 0x563d69c3b395 0x563d69b90e85 0x563d69b92273 0x563d69c9fc82 0x563d69ca9e1e 0x563d69caa00b 0x563d69cab0fa 0x563d69cab18c 0x7fcd4d5f0840 0x563d69c5003a (nil)
 tcmalloc: large alloc 2000003072 bytes == 0x563dfdbe6000 @  0x7fcd4e2f9c7b 0x7fcd4ada90ce 0x7fcd4ae03726 0x7fcd4adf6475 0x7fcd4ae96e51 0x563d69bf6ec6 0x563d69bf7aae 0x563d69c3b601 0x563d69b90e85 0x563d69bb0c71 0x563d69c3b395 0x563d69b90e85 0x563d69b92273 0x563d69c9fc82 0x563d69ca9e1e 0x563d69caa00b 0x563d69cab0fa 0x563d69cab18c 0x7fcd4d5f0840 0x563d69c5003a (nil)
+./data/gauss100/gauss100_base.fvecs
+The filename does not end with bin
+Dimensionality - 100
+Cardinality - 1000000
+L2 space (FLOAT) 
+tcmalloc: large alloc 1692000256 bytes == 0x1c3f6000 @  0x7fd4c1920c7b 0x403c47 0x7fd4c0bd0840 0x404769 (nil)
+ will write index to ./data/gauss100/gauss100_ef2000_M160.index_plain
+Processing - 100000 / 1000000
+Processing - 200000 / 1000000
+Processing - 300000 / 1000000
+Processing - 400000 / 1000000
+Processing - 500000 / 1000000
+Processing - 600000 / 1000000
+Processing - 700000 / 1000000
+Processing - 800000 / 1000000
+Processing - 900000 / 1000000
+Processing - 1000000 / 1000000

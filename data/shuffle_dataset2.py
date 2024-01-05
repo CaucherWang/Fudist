@@ -15,9 +15,9 @@ def update_gt(gt, original_positions):
     return gt
 
 source = './data/'
-datasets = ['deep']
+datasets = ['gist']
 if __name__ == '__main__':
-    for shuf_num in range(10, 40):
+    for shuf_num in range(3, 30):
         for dataset in datasets:
             dir = os.path.join(source, dataset)
             data_file = os.path.join(dir, f'{dataset}_base.fvecs')

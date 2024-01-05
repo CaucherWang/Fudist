@@ -516,14 +516,12 @@ class IdentPreproc:
     def apply_py(self, x):
         return x
 
-# This is the modified CPU version of compute_GT from Faiss.
-# Performs exhaustive search to find ground truth nearest neighbors.
 def compute_GT_CPU(xb, xq, gt_sl):
     nq_gt, _ = xq.shape
     print("compute GT CPU")
     t0 = time.time()
 
-    gt_I = np.zeros((nq_gt, gt_sl), dtype='int32')
+    gt_I = np.zeros((nq_gt, gt_sl), dtype='int64')
     gt_D = np.zeros((nq_gt, gt_sl), dtype='float32')
     heaps = faiss.float_maxheap_array_t()
     heaps.k = gt_sl
@@ -566,6 +564,7 @@ def compute_GT_CPU(xb, xq, gt_sl):
 
     
     return data_ids, data_dis
+
 
 def compute_GT_CPU_IP(xb_raw, xq_raw, gt_sl):
     
